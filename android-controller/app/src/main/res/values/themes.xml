@@ -12,6 +12,11 @@
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
+
+        <item name="android:windowLayoutInDisplayCutoutMode">
+            shortEdges <!-- to display over the cutouts in landscape mode -->
+        </item>
+
     </style>
 
     <style name="Theme.BtSerialRemote.Fullscreen" parent="Theme.BtSerialRemote">
@@ -22,8 +27,10 @@
         <item name="android:windowBackground">@null</item>
     </style>
 
-    <style name="ThemeOverlay.BtSerialRemote.FullscreenContainer" parent="">
+    <style name="ThemeOverlay.BtSerialRemote.FullscreenContainer"
+           parent="Theme.BtSerialRemote">
         <item name="fullscreenBackgroundColor">@color/black_overlay</item>
         <item name="fullscreenTextColor">@color/white</item>
     </style>
+
 </resources>
