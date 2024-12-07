@@ -1,13 +1,18 @@
 package com.poconoco.tests.btserialremote;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
+import android.content.pm.PackageManager;
 import android.graphics.PointF;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.view.MotionEvent;
+import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -28,7 +33,12 @@ import java.util.Collection;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
+import BtSerialRemote.R;
+
 public class MainActivity extends AppCompatActivity {
+
+    private static final int BT_PERMISSION_REQUEST = 100;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,6 +53,14 @@ public class MainActivity extends AppCompatActivity {
 
         mLeftJoystickPos = new PointF(0.5f, 0.5f);
 
+
+        mLeftJoystick.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                updateKnob();
+            }
+        });
+
         mBluetoothManager = BluetoothManager.getInstance();
         if (mBluetoothManager == null) {
             // Bluetooth unavailable on this device :( tell the user
@@ -51,23 +69,62 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                    != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{ Manifest.permission.BLUETOOTH_CONNECT },
+                    BT_PERMISSION_REQUEST);
+        } else {
+            populatePairedDevices();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        disconnect(null);
+    }
+
+    @Override public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults)
+    {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == BT_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                populatePairedDevices();
+            } else {
+                mStatus.setText("Check BT permission");
+            }
+        }
+    }
+
+    private void populatePairedDevices() {
         final Collection<BluetoothDevice> pairedDevices = mBluetoothManager.getPairedDevicesList();
         ArrayList<String> pairedNames = new ArrayList<>();
         mPairedMACs = new ArrayList<>();
 
-        for (final BluetoothDevice device : pairedDevices) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                pairedNames.add(device.getAlias());
-            } else {
-                pairedNames.add(device.getName());
+        try {
+            for (final BluetoothDevice device : pairedDevices) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    pairedNames.add(device.getAlias());
+                } else {
+                    pairedNames.add(device.getName());
+                }
+                mPairedMACs.add(device.getAddress());
             }
-            mPairedMACs.add(device.getAddress());
+        } catch (SecurityException e) {
+            mStatus.setText("Check BT permission");
         }
 
         final ArrayAdapter<String> spinnerAdapter =
                 new ArrayAdapter<String>(this,
-                                         android.R.layout.simple_spinner_item,
-                                         pairedNames);
+                        android.R.layout.simple_spinner_item,
+                        pairedNames);
 
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mDeviceSelection.setAdapter(spinnerAdapter);
@@ -77,15 +134,6 @@ public class MainActivity extends AppCompatActivity {
 
         attachViewJoystick(mLeftJoystick, mLeftJoystickPos);
 
-        // FIXME: This has no effect, the knob is not placed in the center at the start
-        this.updateKnob();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        disconnect(null);
     }
 
     private void scheduleSend() {
@@ -97,9 +145,10 @@ public class MainActivity extends AppCompatActivity {
                     int x = Math.round(mLeftJoystickPos.x * 100);
                     int y = 100 - Math.round(mLeftJoystickPos.y * 100);
 
-                    String packet = String.format("MX%03dY%03dA%dB%d", x, y,
-                                                  mSwitchA ? 1 : 0,
-                                                  mSwitchB ? 1 : 0);
+                    String packet = String.format(
+                        "MX%03dY%03dA%dB%d", x, y,
+                        mSwitchA ? 1 : 0,
+                        mSwitchB ? 1 : 0);
                     mStatus.setText(packet);
 
                     mDeviceInterface.sendMessage(packet);
@@ -119,10 +168,14 @@ public class MainActivity extends AppCompatActivity {
                 view1.getLocationOnScreen(pos);
                 //view.getLocationInWindow(locations);
 
-                float width = view1.getWidth();
-                float height = view1.getHeight();
-                float x = motionEvent.getX() / width;
-                float y = motionEvent.getY() / height;
+                final float width = view1.getWidth();
+                final float height = view1.getHeight();
+
+                final float knobW = (float)mLeftKnob.getWidth();
+                final float knobH = (float)mLeftKnob.getHeight();
+
+                final float x = (motionEvent.getX() - knobW/2) / (width - knobW);
+                final float y = (motionEvent.getY() - knobH/2) / (height - knobH);
 
                 output.x = clamp(x, 0, 1);
                 output.y = clamp(y, 0, 1);
@@ -146,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateKnob() {
-        int allowedOver = 40;
+        int allowedOver = 0;
 
         int maxX = mLeftJoystick.getWidth() - mLeftKnob.getWidth() + allowedOver * 2;
         int maxY = mLeftJoystick.getHeight() - mLeftKnob.getHeight() + allowedOver * 2;
@@ -176,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
     private void resetSwitchButtons() {
         @SuppressLint("UseSwitchCompatOrMaterialCode")
         final Switch mLight = findViewById(R.id.switchA);
-        final Button mHonk = findViewById(R.id.buttonHonk);
+        final Button mHonk = findViewById(R.id.buttonE);
 
         mLight.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -200,7 +253,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void connect() {
-        final String mac = mPairedMACs.get(mDeviceSelection.getSelectedItemPosition());
+        final int selectedPos = mDeviceSelection.getSelectedItemPosition();
+
+        if (selectedPos < 0) {
+            resetConnectButton();
+            mStatus.setText("No BT connection selected");
+            return;
+        }
+
+        final String mac = mPairedMACs.get(selectedPos);
 
         mBluetoothManager.openSerialDevice(mac)
                 .subscribeOn(Schedulers.io())
