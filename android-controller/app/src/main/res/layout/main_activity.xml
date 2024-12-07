@@ -4,59 +4,96 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
+    android:background="?android:colorBackground"
     android:theme="@style/ThemeOverlay.BtSerialRemote.FullscreenContainer"
-    tools:context=".MainActivity">
+    tools:context="com.poconoco.tests.btserialremote.MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/linearLayout"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
 
             <Spinner
                 android:id="@+id/btDevice"
-                android:layout_width="400dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:spinnerMode="dropdown" />
+                android:layout_width="300dp"
+                android:layout_height="0dp"
+                android:spinnerMode="dropdown"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/connect"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <Button
                 android:id="@+id/connect"
-                android:layout_width="300dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="Connect" />
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Connect"
+                app:layout_constraintStart_toEndOf="@+id/btDevice"
+                app:layout_constraintTop_toTopOf="@+id/btDevice" />
 
             <TextView
                 android:id="@+id/status"
-                android:layout_width="500dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:textColor="@color/white" />
-        </LinearLayout>
+                android:layout_width="0dp"
+                android:layout_height="25dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:text="Ready to connect"
+                android:textColor="@color/white"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/connect"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="100"
             android:orientation="horizontal">
 
             <RelativeLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:layout_height="match_parent"
+                android:layout_weight="0.5">
 
-                <ImageView
-                    android:id="@+id/leftJoystick"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
-                    android:layout_weight="1"
-                    android:scaleType="fitCenter"
-                    app:srcCompat="@drawable/pad" />
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    tools:context=".MainActivity">
+
+                    <androidx.constraintlayout.widget.Guideline
+                        android:id="@+id/leftGuideline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        app:layout_constraintGuide_percent="0.5" />
+
+                    <ImageView
+                        android:id="@+id/leftJoystick"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+
+                        android:layout_marginTop="20dp"
+                        android:layout_marginBottom="20dp"
+                        android:scaleType="fitCenter"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintDimensionRatio="1"
+                        app:layout_constraintEnd_toEndOf="parent"
+
+                        app:layout_constraintHeight_percent="1.0"
+                        app:layout_constraintHorizontal_bias="0.0"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:srcCompat="@drawable/pad" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <RelativeLayout
                     android:id="@+id/leftKnob"
@@ -68,35 +105,109 @@
                         android:layout_width="100dp"
                         android:layout_height="100dp"
                         android:layout_weight="1"
-                        app:srcCompat="@android:drawable/radiobutton_on_background" />
+                        app:srcCompat="@drawable/knob" />
                 </RelativeLayout>
 
             </RelativeLayout>
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <Switch
-                    android:id="@+id/switchA"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:text="Light"
-                    android:textColor="@color/white" />
-
-                <Space
-                    android:layout_width="match_parent"
-                    android:layout_height="30dp" />
-
-                <Button
-                    android:id="@+id/buttonHonk"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Honk!" />
-            </LinearLayout>
-
         </LinearLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/linearLayout2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <Switch
+                android:id="@+id/switchA"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:text="A"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/switchB"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Switch
+                android:id="@+id/switchB"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:text="B"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/switchC"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/switchA"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.508" />
+
+            <Switch
+                android:id="@+id/switchC"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:text="C"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/switchD"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/switchB"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.508" />
+
+            <Switch
+                android:id="@+id/switchD"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:text="D"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/buttonE"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/switchC"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/buttonE"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="E"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/buttonF"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/switchD"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/buttonF"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="F"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/buttonG"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/buttonE"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/buttonG"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="G"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/buttonH"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/buttonF"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/buttonH"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="H"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/buttonG"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 </FrameLayout>
