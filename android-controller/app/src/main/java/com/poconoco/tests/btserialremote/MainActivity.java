@@ -1,18 +1,24 @@
 package com.poconoco.tests.btserialremote;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.view.WindowCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.PointF;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -46,6 +52,11 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.main_activity);
 
+        final Bitmap bitmap = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(getResources().getColor(R.color.background));
+        final BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
+        getWindow().setBackgroundDrawable(bitmapDrawable);
+
         mStatus = findViewById(R.id.status);
         mDeviceSelection = findViewById(R.id.btDevice);
         mLeftJoystick = findViewById(R.id.leftJoystick);
@@ -53,6 +64,20 @@ public class MainActivity extends AppCompatActivity {
 
         mLeftJoystickPos = new PointF(0.5f, 0.5f);
 
+
+        mDeviceSelection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                final TextView textView = ((TextView) parent.getChildAt(0));
+                if (textView != null)
+                    textView.setTextColor(Color.WHITE);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
 
         mLeftJoystick.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
