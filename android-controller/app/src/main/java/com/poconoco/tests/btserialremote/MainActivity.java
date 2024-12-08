@@ -1,7 +1,6 @@
 package com.poconoco.tests.btserialremote;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.view.WindowCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -17,7 +16,6 @@ import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -59,11 +57,13 @@ public class MainActivity extends AppCompatActivity {
 
         mStatus = findViewById(R.id.status);
         mDeviceSelection = findViewById(R.id.btDevice);
-        mLeftJoystick = findViewById(R.id.leftJoystick);
+        mLeftPad = findViewById(R.id.leftJoystick);
+        mRightPad = findViewById(R.id.rightJoystick);
         mLeftKnob = findViewById(R.id.leftKnob);
+        mRightKnob = findViewById(R.id.rightKnob);
 
         mLeftJoystickPos = new PointF(0.5f, 0.5f);
-
+        mRightJoystickPos = new PointF(0.5f, 0.5f);
 
         mDeviceSelection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -79,12 +79,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        mLeftJoystick.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                updateKnob();
-            }
-        });
+        resetKnobWhenPadReady(mLeftPad, mLeftKnob, mLeftJoystickPos);
+        resetKnobWhenPadReady(mRightPad, mRightKnob, mRightJoystickPos);
 
         mBluetoothManager = BluetoothManager.getInstance();
         if (mBluetoothManager == null) {
@@ -156,9 +152,6 @@ public class MainActivity extends AppCompatActivity {
 
         resetConnectButton();
         resetSwitchButtons();
-
-        attachViewJoystick(mLeftJoystick, mLeftJoystickPos);
-
     }
 
     private void scheduleSend() {
@@ -167,13 +160,16 @@ public class MainActivity extends AppCompatActivity {
                     if (!mConnected)
                         return;
 
-                    int x = Math.round(mLeftJoystickPos.x * 100);
-                    int y = 100 - Math.round(mLeftJoystickPos.y * 100);
+                    int x1 = Math.round(mLeftJoystickPos.x * 100);
+                    int y1 = 100 - Math.round(mLeftJoystickPos.y * 100);
+
+                    int x2 = Math.round(mRightJoystickPos.x * 100);
+                    int y2 = 100 - Math.round(mRightJoystickPos.y * 100);
 
                     String packet = String.format(
-                        "MX%03dY%03dA%dB%d", x, y,
-                        mSwitchA ? 1 : 0,
-                        mSwitchB ? 1 : 0);
+                        "MX%03dY%03dA%dB%d", x1, y1,
+                        mStateA ? 1 : 0,
+                        mStateE ? 1 : 0);
                     mStatus.setText(packet);
 
                     mDeviceInterface.sendMessage(packet);
@@ -183,10 +179,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void attachViewJoystick(ImageView view, PointF output) {
+    private void attachViewJoystick(ImageView padView, RelativeLayout knobView, PointF output) {
 
         final MainActivity that = this;
-        view.setOnTouchListener((view1, motionEvent) -> {
+        padView.setOnTouchListener((view1, motionEvent) -> {
             if (motionEvent.getActionMasked() == MotionEvent.ACTION_DOWN
                     || motionEvent.getActionMasked() == MotionEvent.ACTION_MOVE) {
                 int[] pos = new int[2];
@@ -196,8 +192,8 @@ public class MainActivity extends AppCompatActivity {
                 final float width = view1.getWidth();
                 final float height = view1.getHeight();
 
-                final float knobW = (float)mLeftKnob.getWidth();
-                final float knobH = (float)mLeftKnob.getHeight();
+                final float knobW = (float)knobView.getWidth();
+                final float knobH = (float)knobView.getHeight();
 
                 final float x = (motionEvent.getX() - knobW/2) / (width - knobW);
                 final float y = (motionEvent.getY() - knobH/2) / (height - knobH);
@@ -205,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
                 output.x = clamp(x, 0, 1);
                 output.y = clamp(y, 0, 1);
 
-                that.updateKnob();
+                that.updateKnob(padView, knobView, output);
 
                 return true;
             }
@@ -214,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
                 output.x = 0.5f;
                 output.y = 0.5f;
 
-                that.updateKnob();
+                that.updateKnob(padView, knobView, output);
 
                 return true;
             }
@@ -223,14 +219,24 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void updateKnob() {
+    private void resetKnobWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
+        padView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                updateKnob(padView, knobView, pos);
+                attachViewJoystick(padView, knobView, pos);
+            }
+        });
+    }
+
+    private void updateKnob(ImageView padView, RelativeLayout knobView, PointF pos) {
         int allowedOver = 0;
 
-        int maxX = mLeftJoystick.getWidth() - mLeftKnob.getWidth() + allowedOver * 2;
-        int maxY = mLeftJoystick.getHeight() - mLeftKnob.getHeight() + allowedOver * 2;
+        int maxX = padView.getWidth() - knobView.getWidth() + allowedOver * 2;
+        int maxY = padView.getHeight() - knobView.getHeight() + allowedOver * 2;
 
-        mLeftKnob.setX(mLeftJoystickPos.x * maxX - allowedOver);
-        mLeftKnob.setY(mLeftJoystickPos.y * maxY - allowedOver);
+        knobView.setX(padView.getX() + pos.x * maxX - allowedOver);
+        knobView.setY(padView.getY() + pos.y * maxY - allowedOver);
     }
 
     private void resetConnectButton() {
@@ -253,23 +259,23 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("ClickableViewAccessibility")
     private void resetSwitchButtons() {
         @SuppressLint("UseSwitchCompatOrMaterialCode")
-        final Switch mLight = findViewById(R.id.switchA);
-        final Button mHonk = findViewById(R.id.buttonE);
+        final Switch mSwA = findViewById(R.id.switchA);
+        final Button mBtnE = findViewById(R.id.buttonE);
 
-        mLight.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        mSwA.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mSwitchA = isChecked;
+                mStateA = isChecked;
             }
         });
 
-        mHonk.setOnTouchListener((view1, motionEvent) -> {
+        mBtnE.setOnTouchListener((view1, motionEvent) -> {
             if (motionEvent.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                mSwitchB = true;
+                mStateE = true;
                 return true;
             }
 
             if (motionEvent.getActionMasked() == MotionEvent.ACTION_UP) {
-                mSwitchB = false;
+                mStateE = false;
                 return true;
             }
 
@@ -336,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onError(Throwable error) {
-        disconnect("Error: "+error.getLocalizedMessage());
+        disconnect("Connection error");
     }
 
     private float clamp(float val, float min, float max) {
@@ -345,14 +351,16 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mStatus;
     private Spinner mDeviceSelection;
-    private ImageView mLeftJoystick;
-
+    private ImageView mLeftPad;
+    private ImageView mRightPad;
     private RelativeLayout mLeftKnob;
+    private RelativeLayout mRightKnob;
 
     // State to be sent
     private PointF mLeftJoystickPos;
-    private boolean mSwitchA;
-    private boolean mSwitchB;
+    private PointF mRightJoystickPos;
+    private boolean mStateA;
+    private boolean mStateE;
 
     private BluetoothManager mBluetoothManager;
     private SimpleBluetoothDeviceInterface mDeviceInterface;
