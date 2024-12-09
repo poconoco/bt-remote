@@ -1,10 +1,16 @@
 package com.poconoco.tests.btserialremote;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
+import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -16,10 +22,13 @@ import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
@@ -50,20 +59,13 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.main_activity);
 
-        final Bitmap bitmap = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(getResources().getColor(R.color.background));
-        final BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
-        getWindow().setBackgroundDrawable(bitmapDrawable);
+        fixFullscreen();
 
         mStatus = findViewById(R.id.status);
         mDeviceSelection = findViewById(R.id.btDevice);
-        mLeftPad = findViewById(R.id.leftJoystick);
-        mRightPad = findViewById(R.id.rightJoystick);
-        mLeftKnob = findViewById(R.id.leftKnob);
-        mRightKnob = findViewById(R.id.rightKnob);
 
-        mLeftJoystickPos = new PointF(0.5f, 0.5f);
-        mRightJoystickPos = new PointF(0.5f, 0.5f);
+        mLeftJoyPos = new PointF(0.5f, 0.5f);
+        mRightJoyPos = new PointF(0.5f, 0.5f);
 
         mDeviceSelection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -79,8 +81,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        resetKnobWhenPadReady(mLeftPad, mLeftKnob, mLeftJoystickPos);
-        resetKnobWhenPadReady(mRightPad, mRightKnob, mRightJoystickPos);
+        resetKnobWhenPadReady(findViewById(R.id.leftJoystick), findViewById(R.id.leftKnob), mLeftJoyPos);
+        resetKnobWhenPadReady(findViewById(R.id.rightJoystick), findViewById(R.id.rightKnob), mRightJoyPos);
+
+        initSettingsButton();
+        applyPreferences();
 
         mBluetoothManager = BluetoothManager.getInstance();
         if (mBluetoothManager == null) {
@@ -109,7 +114,14 @@ public class MainActivity extends AppCompatActivity {
         disconnect(null);
     }
 
-    @Override public void onRequestPermissionsResult(
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applyPreferences();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
             int requestCode,
             String[] permissions,
             int[] grantResults)
@@ -118,10 +130,73 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == BT_PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 populatePairedDevices();
+                populatePairedDevices();
             } else {
                 mStatus.setText("Check BT permission");
             }
         }
+    }
+
+    private void fixFullscreen() {
+        // Try to fill the space under the camera cutout to the same color we use for
+        // background
+        final Bitmap bitmap = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
+        bitmap.eraseColor(getResources().getColor(R.color.background, null));
+        final BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
+        getWindow().setBackgroundDrawable(bitmapDrawable);
+
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+    }
+
+    private void applyPreferences() {
+        final SharedPreferences sharedPreferences =
+            PreferenceManager.getDefaultSharedPreferences(this);
+
+        setViewName(R.id.switchA, sharedPreferences.getString("switchA", ""), "A");
+        setViewName(R.id.switchB, sharedPreferences.getString("switchB", ""), "B");
+        setViewName(R.id.switchC, sharedPreferences.getString("switchC", ""), "C");
+        setViewName(R.id.switchD, sharedPreferences.getString("switchD", ""), "D");
+
+        setViewName(R.id.buttonE, sharedPreferences.getString("buttonE", ""), "E");
+        setViewName(R.id.buttonF, sharedPreferences.getString("buttonF", ""), "F");
+        setViewName(R.id.buttonG, sharedPreferences.getString("buttonG", ""), "G");
+        setViewName(R.id.buttonH, sharedPreferences.getString("buttonH", ""), "H");
+
+        setViewName(R.id.sliderLText, sharedPreferences.getString("sliderL", ""), "L");
+        setViewName(R.id.sliderRText, sharedPreferences.getString("sliderR", ""), "R");
+
+        setViewVisibility(R.id.sliderLContainer, sharedPreferences.getBoolean("showSliderL", true));
+        setViewVisibility(R.id.sliderRContainer, sharedPreferences.getBoolean("showSliderR", true));
+
+        setViewVisibility(R.id.leftJoystick, sharedPreferences.getBoolean("showJoyL", true));
+        setViewVisibility(R.id.rightJoystick, sharedPreferences.getBoolean("showJoyR", true));
+        setViewVisibility(R.id.leftKnob, sharedPreferences.getBoolean("showJoyL", true));
+        setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
+
+    }
+
+    private void setViewName(int resourceId, String name, String defValue) {
+        if (name == null || name.isEmpty())
+            name = defValue;
+
+        final TextView switchView = findViewById(resourceId);
+        switchView.setText(name);
+    }
+
+    private void setViewVisibility(int resourceId, boolean visible) {
+        final View view = findViewById(resourceId);
+        view.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void initSettingsButton() {
+        final ImageButton settingsButton = findViewById(R.id.buttonSettings);
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent settingsIntent = new Intent(MainActivity.this, PrefsActivity.class);
+                MainActivity.this.startActivity(settingsIntent);
+            }
+        });
     }
 
     private void populatePairedDevices() {
@@ -160,11 +235,11 @@ public class MainActivity extends AppCompatActivity {
                     if (!mConnected)
                         return;
 
-                    int x1 = Math.round(mLeftJoystickPos.x * 100);
-                    int y1 = 100 - Math.round(mLeftJoystickPos.y * 100);
+                    int x1 = Math.round(mLeftJoyPos.x * 100);
+                    int y1 = 100 - Math.round(mLeftJoyPos.y * 100);
 
-                    int x2 = Math.round(mRightJoystickPos.x * 100);
-                    int y2 = 100 - Math.round(mRightJoystickPos.y * 100);
+                    int x2 = Math.round(mRightJoyPos.x * 100);
+                    int y2 = 100 - Math.round(mRightJoyPos.y * 100);
 
                     String packet = String.format(
                         "MX%03dY%03dA%dB%d", x1, y1,
@@ -178,65 +253,61 @@ public class MainActivity extends AppCompatActivity {
                 100);
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private void attachViewJoystick(ImageView padView, RelativeLayout knobView, PointF output) {
-
-        final MainActivity that = this;
-        padView.setOnTouchListener((view1, motionEvent) -> {
-            if (motionEvent.getActionMasked() == MotionEvent.ACTION_DOWN
-                    || motionEvent.getActionMasked() == MotionEvent.ACTION_MOVE) {
-                int[] pos = new int[2];
-                view1.getLocationOnScreen(pos);
-                //view.getLocationInWindow(locations);
-
-                final float width = view1.getWidth();
-                final float height = view1.getHeight();
-
-                final float knobW = (float)knobView.getWidth();
-                final float knobH = (float)knobView.getHeight();
-
-                final float x = (motionEvent.getX() - knobW/2) / (width - knobW);
-                final float y = (motionEvent.getY() - knobH/2) / (height - knobH);
-
-                output.x = clamp(x, 0, 1);
-                output.y = clamp(y, 0, 1);
-
-                that.updateKnob(padView, knobView, output);
-
-                return true;
-            }
-
-            if (motionEvent.getActionMasked() == MotionEvent.ACTION_UP) {
-                output.x = 0.5f;
-                output.y = 0.5f;
-
-                that.updateKnob(padView, knobView, output);
-
-                return true;
-            }
-
-            return false;
-        });
-    }
-
     private void resetKnobWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
         padView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 updateKnob(padView, knobView, pos);
-                attachViewJoystick(padView, knobView, pos);
+                attachKnobMovement(padView, knobView, pos);
             }
         });
     }
 
     private void updateKnob(ImageView padView, RelativeLayout knobView, PointF pos) {
-        int allowedOver = 0;
+        int maxX = padView.getWidth() - knobView.getWidth();
+        int maxY = padView.getHeight() - knobView.getHeight();
 
-        int maxX = padView.getWidth() - knobView.getWidth() + allowedOver * 2;
-        int maxY = padView.getHeight() - knobView.getHeight() + allowedOver * 2;
+        knobView.setX(padView.getX() + pos.x * maxX);
+        knobView.setY(padView.getY() + pos.y * maxY);
+    }
 
-        knobView.setX(padView.getX() + pos.x * maxX - allowedOver);
-        knobView.setY(padView.getY() + pos.y * maxY - allowedOver);
+    @SuppressLint("ClickableViewAccessibility")
+    private void attachKnobMovement(ImageView padView, RelativeLayout knobView, PointF output) {
+
+        final MainActivity that = this;
+        padView.setOnTouchListener((view1, motionEvent) -> {
+            final int action = motionEvent.getActionMasked();
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                    int[] pos = new int[2];
+                    view1.getLocationOnScreen(pos);
+
+                    final float width = view1.getWidth();
+                    final float height = view1.getHeight();
+
+                    final float knobW = (float)knobView.getWidth();
+                    final float knobH = (float)knobView.getHeight();
+
+                    final float x = (motionEvent.getX() - knobW/2) / (width - knobW);
+                    final float y = (motionEvent.getY() - knobH/2) / (height - knobH);
+
+                    output.x = clamp(x, 0, 1);
+                    output.y = clamp(y, 0, 1);
+
+                    that.updateKnob(padView, knobView, output);
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                    output.x = 0.5f;
+                    output.y = 0.5f;
+
+                    that.updateKnob(padView, knobView, output);
+                    return true;
+            }
+
+            return false;
+        });
     }
 
     private void resetConnectButton() {
@@ -259,7 +330,7 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("ClickableViewAccessibility")
     private void resetSwitchButtons() {
         @SuppressLint("UseSwitchCompatOrMaterialCode")
-        final Switch mSwA = findViewById(R.id.switchA);
+        final SwitchCompat mSwA = findViewById(R.id.switchA);
         final Button mBtnE = findViewById(R.id.buttonE);
 
         mSwA.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -269,14 +340,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
         mBtnE.setOnTouchListener((view1, motionEvent) -> {
-            if (motionEvent.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                mStateE = true;
-                return true;
-            }
+            final int action = motionEvent.getActionMasked();
 
-            if (motionEvent.getActionMasked() == MotionEvent.ACTION_UP) {
-                mStateE = false;
-                return true;
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    mStateE = true;
+                    break;
+                case MotionEvent.ACTION_UP:
+                    mStateE = false;
+                    break;
             }
 
             return false;
@@ -351,14 +423,10 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mStatus;
     private Spinner mDeviceSelection;
-    private ImageView mLeftPad;
-    private ImageView mRightPad;
-    private RelativeLayout mLeftKnob;
-    private RelativeLayout mRightKnob;
 
     // State to be sent
-    private PointF mLeftJoystickPos;
-    private PointF mRightJoystickPos;
+    private PointF mLeftJoyPos;
+    private PointF mRightJoyPos;
     private boolean mStateA;
     private boolean mStateE;
 

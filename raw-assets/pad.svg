@@ -24,7 +24,7 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="1.4485269"
-     inkscape:cx="146.70076"
+     inkscape:cx="146.35558"
      inkscape:cy="173.62467"
      inkscape:window-width="1920"
      inkscape:window-height="1009"
@@ -39,7 +39,7 @@
      inkscape:groupmode="layer"
      id="layer1">
     <circle
-       style="fill:#2d2316;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:4.5;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#383838;fill-opacity:1;fill-rule:evenodd;stroke:#131313;stroke-width:4.5;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
        id="path1"
        cx="-50"
        cy="-50"
@@ -47,15 +47,15 @@
        transform="scale(-1)" />
     <g
        id="g4"
-       style="fill:#533b1e;fill-opacity:1;stroke:#231c10;stroke-width:5;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#5e4d31;fill-opacity:1;stroke:#262626;stroke-width:5;stroke-dasharray:none;stroke-opacity:1"
        transform="translate(-59.228783,-78.955719)">
       <g
          id="g3"
          transform="rotate(180,110.45322,128.90171)"
-         style="fill:#533b1e;fill-opacity:1;stroke:#231c10;stroke-width:5;stroke-dasharray:none;stroke-opacity:1">
+         style="fill:#5e4d31;fill-opacity:1;stroke:#262626;stroke-width:5;stroke-dasharray:none;stroke-opacity:1">
         <path
            sodipodi:type="star"
-           style="fill:#533b1e;fill-opacity:1;fill-rule:evenodd;stroke:#231c10;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+           style="fill:#5e4d31;fill-opacity:1;fill-rule:evenodd;stroke:#262626;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
            id="path2"
            inkscape:flatsided="false"
            sodipodi:sides="3"
@@ -73,7 +73,7 @@
            inkscape:transform-center-x="-1.7925364e-06" />
         <path
            sodipodi:type="star"
-           style="fill:#533b1e;fill-opacity:1;fill-rule:evenodd;stroke:#231c10;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+           style="fill:#5e4d31;fill-opacity:1;fill-rule:evenodd;stroke:#262626;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
            id="path2-2"
            inkscape:flatsided="false"
            sodipodi:sides="3"
@@ -92,10 +92,10 @@
       <g
          id="g2"
          transform="matrix(-1,0,0,1,253.04682,34.388101)"
-         style="fill:#533b1e;fill-opacity:1;stroke:#231c10;stroke-width:5;stroke-dasharray:none;stroke-opacity:1">
+         style="fill:#5e4d31;fill-opacity:1;stroke:#262626;stroke-width:5;stroke-dasharray:none;stroke-opacity:1">
         <path
            sodipodi:type="star"
-           style="fill:#533b1e;fill-opacity:1;fill-rule:evenodd;stroke:#231c10;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+           style="fill:#5e4d31;fill-opacity:1;fill-rule:evenodd;stroke:#262626;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
            id="path2-0"
            inkscape:flatsided="false"
            sodipodi:sides="3"
@@ -112,7 +112,7 @@
            inkscape:transform-center-x="3.2613385" />
         <path
            sodipodi:type="star"
-           style="fill:#533b1e;fill-opacity:1;fill-rule:evenodd;stroke:#231c10;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+           style="fill:#5e4d31;fill-opacity:1;fill-rule:evenodd;stroke:#262626;stroke-width:6.60458;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
            id="path2-2-9"
            inkscape:flatsided="false"
            sodipodi:sides="3"
