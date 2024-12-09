@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="Show controls">
+        <CheckBoxPreference
+            android:key="showJoyL"
+            android:title="Show left joystick"
+            app:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="showJoyR"
+            android:title="Show right joystick"
+            app:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="showSliderL"
+            android:title="Show left slider"
+            app:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="showSliderR"
+            android:title="Show right slider"
+            app:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Switch names (empty for default)">
+        <EditTextPreference
+            android:key="switchA"
+            android:title="Switch A"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="switchB"
+            android:title="Switch B"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="switchC"
+            android:title="Switch C"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="switchD"
+            android:title="Switch D"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Button names (empty for default)">
+        <EditTextPreference
+            android:key="buttonE"
+            android:title="Button E"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="buttonF"
+            android:title="Button F"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="buttonG"
+            android:title="Button G"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="buttonH"
+            android:title="Button H"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Slider names (empty for default)">
+        <EditTextPreference
+            android:key="sliderR"
+            android:title="Right slider"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="sliderL"
+            android:title="Left slider"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+
+</androidx.preference.PreferenceScreen>

@@ -6,11 +6,10 @@ android {
     defaultConfig {
         applicationId "com.skyhook.tests.btserialremote"
         compileSdk 34
+        targetSdk 34
         minSdkVersion 27
         versionCode 1
         versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -28,9 +27,7 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'
-    testImplementation 'junit:junit:4.+'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    implementation 'androidx.preference:preference:1.2.1'
 
     // BT serial for Android from https://github.com/harry1453/android-bluetooth-serial/
     implementation 'com.github.harry1453:android-bluetooth-serial:v1.1'
