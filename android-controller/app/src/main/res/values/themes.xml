@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.BtSerialRemote" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.SerialRemote" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/primary_1</item>
         <item name="colorPrimaryVariant">@color/primary_2</item>
@@ -19,16 +19,16 @@
 
     </style>
 
-    <style name="Theme.BtSerialRemote.Fullscreen" parent="Theme.BtSerialRemote">
+    <style name="Theme.SerialRemote.Fullscreen" parent="Theme.SerialRemote">
         <item name="android:actionBarStyle">
-            @style/Widget.Theme.BtSerialRemote.ActionBar.Fullscreen
+            @style/Widget.Theme.SerialRemote.ActionBar.Fullscreen
         </item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:windowBackground">@null</item>
     </style>
 
-    <style name="ThemeOverlay.BtSerialRemote.FullscreenContainer"
-           parent="Theme.BtSerialRemote">
+    <style name="ThemeOverlay.SerialRemote.FullscreenContainer"
+           parent="Theme.SerialRemote">
         <item name="fullscreenBackgroundColor">@color/black_overlay</item>
         <item name="fullscreenTextColor">@color/white</item>
     </style>
