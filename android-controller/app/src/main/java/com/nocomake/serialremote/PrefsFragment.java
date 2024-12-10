@@ -1,9 +1,9 @@
-package com.poconoco.tests.btserialremote;
+package com.nocomake.serialremote;
 
 import android.os.Bundle;
 import androidx.preference.PreferenceFragmentCompat;
 
-import BtSerialRemote.R;
+import SerialRemote.R;
 
 public class PrefsFragment extends PreferenceFragmentCompat {
     @Override

@@ -1,8 +1,7 @@
-package com.poconoco.tests.btserialremote;
+package com.nocomake.serialremote;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
@@ -21,9 +20,6 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.WindowInsets;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -32,21 +28,23 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.harrysoft.androidbluetoothserial.BluetoothManager;
-import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice;
-import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-import BtSerialRemote.R;
+import com.nocomake.serialremote.conn.Connection;
+import com.nocomake.serialremote.conn.BluetoothConnection;
+import com.nocomake.serialremote.conn.ConnectionFactory;
+
+import SerialRemote.R;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -87,20 +85,17 @@ public class MainActivity extends AppCompatActivity {
         initSettingsButton();
         applyPreferences();
 
-        mBluetoothManager = BluetoothManager.getInstance();
-        if (mBluetoothManager == null) {
-            // Bluetooth unavailable on this device :( tell the user
-            Toast.makeText(this, "Bluetooth not available", Toast.LENGTH_LONG).show(); // Replace context with your context instance.
-            mStatus.setText("Bluetooth not available");
-            return;
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                    != PackageManager.PERMISSION_GRANTED) {
+                (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                         != PackageManager.PERMISSION_GRANTED ||
+                 ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
+                         != PackageManager.PERMISSION_GRANTED)) {
+
             ActivityCompat.requestPermissions(
                     this,
-                    new String[]{ Manifest.permission.BLUETOOTH_CONNECT },
+                    new String[]{
+                            Manifest.permission.BLUETOOTH_CONNECT,
+                            Manifest.permission.BLUETOOTH_SCAN},
                     BT_PERMISSION_REQUEST);
         } else {
             populatePairedDevices();
@@ -124,11 +119,12 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(
             int requestCode,
             String[] permissions,
-            int[] grantResults)
-    {
+            int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == BT_PERMISSION_REQUEST) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
                 populatePairedDevices();
                 populatePairedDevices();
             } else {
@@ -145,12 +141,16 @@ public class MainActivity extends AppCompatActivity {
         final BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
         getWindow().setBackgroundDrawable(bitmapDrawable);
 
-//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        // An attempt to remove the black bar at the bottom with close swipe handle,
+        // but also affects status bar, so disable for now, to reconsider later
+
+        // getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+        //                      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
     }
 
     private void applyPreferences() {
         final SharedPreferences sharedPreferences =
-            PreferenceManager.getDefaultSharedPreferences(this);
+                PreferenceManager.getDefaultSharedPreferences(this);
 
         setViewName(R.id.switchA, sharedPreferences.getString("switchA", ""), "A");
         setViewName(R.id.switchB, sharedPreferences.getString("switchB", ""), "B");
@@ -190,37 +190,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void initSettingsButton() {
         final ImageButton settingsButton = findViewById(R.id.buttonSettings);
-        settingsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent settingsIntent = new Intent(MainActivity.this, PrefsActivity.class);
-                MainActivity.this.startActivity(settingsIntent);
-            }
+        settingsButton.setOnClickListener(v -> {
+            Intent settingsIntent = new Intent(MainActivity.this, PrefsActivity.class);
+            MainActivity.this.startActivity(settingsIntent);
         });
     }
 
     private void populatePairedDevices() {
-        final Collection<BluetoothDevice> pairedDevices = mBluetoothManager.getPairedDevicesList();
-        ArrayList<String> pairedNames = new ArrayList<>();
-        mPairedMACs = new ArrayList<>();
-
-        try {
-            for (final BluetoothDevice device : pairedDevices) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    pairedNames.add(device.getAlias());
-                } else {
-                    pairedNames.add(device.getName());
-                }
-                mPairedMACs.add(device.getAddress());
-            }
-        } catch (SecurityException e) {
-            mStatus.setText("Check BT permission");
-        }
+        mRemoteDevices = ConnectionFactory.getRemoteDevices(this, this::onConnectionError);
+        final List<String> names = Arrays.asList(mRemoteDevices
+                .stream()
+                .map(remoteDevice -> remoteDevice.name)
+                .toArray(String[]::new));
 
         final ArrayAdapter<String> spinnerAdapter =
-                new ArrayAdapter<String>(this,
+                new ArrayAdapter<>(this,
                         android.R.layout.simple_spinner_item,
-                        pairedNames);
+                        names);
 
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mDeviceSelection.setAdapter(spinnerAdapter);
@@ -232,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
     private void scheduleSend() {
         new android.os.Handler(Looper.getMainLooper()).postDelayed(
                 () -> {
-                    if (!mConnected)
+                    if (mSerialConnection == null || ! mSerialConnection.isConnected())
                         return;
 
                     int x1 = Math.round(mLeftJoyPos.x * 100);
@@ -242,24 +228,22 @@ public class MainActivity extends AppCompatActivity {
                     int y2 = 100 - Math.round(mRightJoyPos.y * 100);
 
                     String packet = String.format(
-                        "MX%03dY%03dA%dB%d", x1, y1,
-                        mStateA ? 1 : 0,
-                        mStateE ? 1 : 0);
+                            "MX%03dY%03dA%dB%d", x1, y1,
+                            mStateA ? 1 : 0,
+                            mStateE ? 1 : 0);
                     mStatus.setText(packet);
 
-                    mDeviceInterface.sendMessage(packet);
+                    mSerialConnection.send(packet.getBytes());
+
                     scheduleSend();
                 },
                 100);
     }
 
     private void resetKnobWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
-        padView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                updateKnob(padView, knobView, pos);
-                attachKnobMovement(padView, knobView, pos);
-            }
+        padView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            updateKnob(padView, knobView, pos);
+            attachKnobMovement(padView, knobView, pos);
         });
     }
 
@@ -286,11 +270,11 @@ public class MainActivity extends AppCompatActivity {
                     final float width = view1.getWidth();
                     final float height = view1.getHeight();
 
-                    final float knobW = (float)knobView.getWidth();
-                    final float knobH = (float)knobView.getHeight();
+                    final float knobW = (float) knobView.getWidth();
+                    final float knobH = (float) knobView.getHeight();
 
-                    final float x = (motionEvent.getX() - knobW/2) / (width - knobW);
-                    final float y = (motionEvent.getY() - knobH/2) / (height - knobH);
+                    final float x = (motionEvent.getX() - knobW / 2) / (width - knobW);
+                    final float y = (motionEvent.getY() - knobH / 2) / (height - knobH);
 
                     output.x = clamp(x, 0, 1);
                     output.y = clamp(y, 0, 1);
@@ -314,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
         final Button mConnect = findViewById(R.id.connect);
 
         mConnect.setEnabled(true);
-        if (mConnected) {
+        if (mSerialConnection != null && mSerialConnection.isConnected()) {
             mConnect.setText("Disconnect");
             mConnect.setOnClickListener(view -> disconnect(null));
         } else {
@@ -329,8 +313,7 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void resetSwitchButtons() {
-        @SuppressLint("UseSwitchCompatOrMaterialCode")
-        final SwitchCompat mSwA = findViewById(R.id.switchA);
+        @SuppressLint("UseSwitchCompatOrMaterialCode") final SwitchCompat mSwA = findViewById(R.id.switchA);
         final Button mBtnE = findViewById(R.id.buttonE);
 
         mSwA.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -355,7 +338,25 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void allowConnection(boolean allow, String buttonLabel) {
+        final Button connectBtn = findViewById(R.id.connect);
+        final Spinner spinner = findViewById(R.id.btDevice);
+
+        connectBtn.setText(buttonLabel);
+        connectBtn.setEnabled(allow);
+        spinner.setEnabled(allow);
+    }
+
     private void connect() {
+        if (mSerialConnection != null) {
+            if (mSerialConnection.isConnected()) {
+                allowConnection(true, "Disconnect");
+                return;
+            }
+
+            mSerialConnection = null;
+        }
+
         final int selectedPos = mDeviceSelection.getSelectedItemPosition();
 
         if (selectedPos < 0) {
@@ -364,22 +365,29 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        final String mac = mPairedMACs.get(selectedPos);
+        final ConnectionFactory.RemoteDevice selectedDevice = mRemoteDevices.get(selectedPos);
+        mSerialConnection = ConnectionFactory.createConnection(
+                selectedDevice,
+                this::onPacketSent,
+                this::onMessageReceived,
+                this::onConnectionError,
+                this);
 
-        mBluetoothManager.openSerialDevice(mac)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::onConnected, this::onError);
+        final Disposable d = mSerialConnection.connect(this::onConnected);
+        mCompositeDisposable.add(d);
     }
 
     private void disconnect(final String message) {
-        if (mDeviceInterface != null)
-            mBluetoothManager.closeDevice(mDeviceInterface);
-        mBluetoothManager.close();
+        if (mSerialConnection != null) {
+            if (mSerialConnection.isConnecting())
+                return;
 
-        mDeviceInterface = null;
+            if (mSerialConnection.isConnected())
+                mSerialConnection.disconnect();
 
-        mConnected = false;
+            mSerialConnection = null;
+        }
+
         resetConnectButton();
 
         if (message != null)
@@ -388,34 +396,24 @@ public class MainActivity extends AppCompatActivity {
             mStatus.setText("Disconnected");
     }
 
-    private void onConnected(BluetoothSerialDevice connectedDevice) {
-        // You are now connected to this device!
-        // Here you may want to retain an instance to your device:
-        mDeviceInterface = connectedDevice.toSimpleDeviceInterface();
-
-        // Listen to bluetooth events
-        mDeviceInterface.setListeners(this::onMessageReceived, this::onMessageSent, this::onError);
-
-        // Let's send a message:
-        //mDeviceInterface.sendMessage("Hello world!");
-
+    private void onConnected() {
         mStatus.setText("Connected");
-
-        mConnected = true;
         resetConnectButton();
-
         scheduleSend();
     }
 
-    private void onMessageSent(String message) {}
+    private void onPacketSent() {
+        // Do nothing
+    }
 
     private void onMessageReceived(String message) {
         mStatus.setText("Received: " + message);
     }
 
-    private void onError(Throwable error) {
+    private void onConnectionError() {
         disconnect("Connection error");
     }
+
 
     private float clamp(float val, float min, float max) {
         return Math.max(min, Math.min(max, val));
@@ -430,8 +428,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean mStateA;
     private boolean mStateE;
 
-    private BluetoothManager mBluetoothManager;
-    private SimpleBluetoothDeviceInterface mDeviceInterface;
-    private boolean mConnected;
-    private ArrayList<String> mPairedMACs;
+    private ArrayList<ConnectionFactory.RemoteDevice> mRemoteDevices;
+    private CompositeDisposable mCompositeDisposable = new CompositeDisposable();
+
+    private Connection mSerialConnection;
 }

@@ -6,8 +6,8 @@
     android:layout_height="match_parent"
     android:background="@color/background"
     android:backgroundTintMode="src_over"
-    android:theme="@style/ThemeOverlay.BtSerialRemote.FullscreenContainer"
-    tools:context="com.poconoco.tests.btserialremote.MainActivity">
+    android:theme="@style/ThemeOverlay.SerialRemote.FullscreenContainer"
+    tools:context="com.nocomake.serialremote.MainActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
