@@ -1,0 +1,15 @@
+"DIY Remote" app is provided by nocomake YouTube project. 
+
+It does not collect any personal data, nor it sends any user data
+over Internet. 
+App has no server side, the only network traffic is the TCP stream 
+of binary commands sent to the IP address and port user explicitly 
+specifies in the app settings.
+
+App also allows Bluetooth connection that technically allows to 
+collect Bluetooth devices identification information for devices
+in range that technically may be used to locate user, but the app
+does not send visible beacons anywhere, nor it stores them internally,
+Bluetooth stack is only used to chose the paired device and open serial 
+connection to it to send the binary control stream which is the main 
+and only purpose of the app.
