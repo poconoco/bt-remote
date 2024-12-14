@@ -7,7 +7,6 @@ import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -32,16 +31,12 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 
 import com.nocomake.serialremote.conn.Connection;
-import com.nocomake.serialremote.conn.BluetoothConnection;
 import com.nocomake.serialremote.conn.ConnectionFactory;
 
 import SerialRemote.R;
@@ -338,6 +333,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void setTerminalText(String text) {
+        final TextView receiveTerminal = findViewById(R.id.textTerminal);
+        receiveTerminal.setText(text);
+    }
+
     private void allowConnection(boolean allow, String buttonLabel) {
         final Button connectBtn = findViewById(R.id.connect);
         final Spinner spinner = findViewById(R.id.btDevice);
@@ -390,14 +390,17 @@ public class MainActivity extends AppCompatActivity {
 
         resetConnectButton();
 
-        if (message != null)
+        if (message != null) {
             mStatus.setText(message);
-        else
+        } else {
             mStatus.setText("Disconnected");
+            setTerminalText("");
+        }
     }
 
     private void onConnected() {
         mStatus.setText("Connected");
+        setTerminalText("");
         resetConnectButton();
         scheduleSend();
     }
@@ -407,7 +410,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onMessageReceived(String message) {
-        mStatus.setText("Received: " + message);
+        setTerminalText(message);
     }
 
     private void onConnectionError() {

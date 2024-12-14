@@ -7,7 +7,7 @@ android {
     defaultConfig {
         applicationId "com.nocomake.serialremote"
         compileSdk 35
-        targetSdk 34
+        targetSdk 35
         minSdkVersion 27
         versionCode 1
         versionName "1.0"
@@ -36,4 +36,10 @@ dependencies {
     implementation 'io.reactivex.rxjava2:rxjava:2.1.12'
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
     implementation 'androidx.core:core-ktx:1.15.0'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
