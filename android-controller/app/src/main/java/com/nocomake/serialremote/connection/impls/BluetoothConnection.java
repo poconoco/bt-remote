@@ -1,4 +1,4 @@
-package com.nocomake.serialremote.conn;
+package com.nocomake.serialremote.connection.impls;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -8,6 +8,8 @@ import android.widget.Toast;
 import com.harrysoft.androidbluetoothserial.BluetoothManager;
 import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice;
 import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface;
+import com.nocomake.serialremote.connection.Connection;
+import com.nocomake.serialremote.connection.ConnectionFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,7 +19,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-public class BluetoothConnection extends Connection {
+public class BluetoothConnection implements Connection {
 
     public BluetoothConnection(
             ConnectionFactory.RemoteDevice remoteDevice,

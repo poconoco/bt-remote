@@ -36,8 +36,8 @@ import java.util.List;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
-import com.nocomake.serialremote.conn.Connection;
-import com.nocomake.serialremote.conn.ConnectionFactory;
+import com.nocomake.serialremote.connection.Connection;
+import com.nocomake.serialremote.connection.ConnectionFactory;
 
 import SerialRemote.R;
 
@@ -147,18 +147,18 @@ public class MainActivity extends AppCompatActivity {
         final SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
 
-        setViewName(R.id.switchA, sharedPreferences.getString("switchA", ""), "A");
-        setViewName(R.id.switchB, sharedPreferences.getString("switchB", ""), "B");
-        setViewName(R.id.switchC, sharedPreferences.getString("switchC", ""), "C");
-        setViewName(R.id.switchD, sharedPreferences.getString("switchD", ""), "D");
+        setViewText(R.id.switchA, sharedPreferences.getString("switchA", ""), "A");
+        setViewText(R.id.switchB, sharedPreferences.getString("switchB", ""), "B");
+        setViewText(R.id.switchC, sharedPreferences.getString("switchC", ""), "C");
+        setViewText(R.id.switchD, sharedPreferences.getString("switchD", ""), "D");
 
-        setViewName(R.id.buttonE, sharedPreferences.getString("buttonE", ""), "E");
-        setViewName(R.id.buttonF, sharedPreferences.getString("buttonF", ""), "F");
-        setViewName(R.id.buttonG, sharedPreferences.getString("buttonG", ""), "G");
-        setViewName(R.id.buttonH, sharedPreferences.getString("buttonH", ""), "H");
+        setViewText(R.id.buttonE, sharedPreferences.getString("buttonE", ""), "E");
+        setViewText(R.id.buttonF, sharedPreferences.getString("buttonF", ""), "F");
+        setViewText(R.id.buttonG, sharedPreferences.getString("buttonG", ""), "G");
+        setViewText(R.id.buttonH, sharedPreferences.getString("buttonH", ""), "H");
 
-        setViewName(R.id.sliderLText, sharedPreferences.getString("sliderL", ""), "L");
-        setViewName(R.id.sliderRText, sharedPreferences.getString("sliderR", ""), "R");
+        setViewText(R.id.sliderLText, sharedPreferences.getString("sliderL", ""), "L");
+        setViewText(R.id.sliderRText, sharedPreferences.getString("sliderR", ""), "R");
 
         setViewVisibility(R.id.sliderLContainer, sharedPreferences.getBoolean("showSliderL", true));
         setViewVisibility(R.id.sliderRContainer, sharedPreferences.getBoolean("showSliderR", true));
@@ -167,10 +167,9 @@ public class MainActivity extends AppCompatActivity {
         setViewVisibility(R.id.rightJoystick, sharedPreferences.getBoolean("showJoyR", true));
         setViewVisibility(R.id.leftKnob, sharedPreferences.getBoolean("showJoyL", true));
         setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
-
     }
 
-    private void setViewName(int resourceId, String name, String defValue) {
+    private void setViewText(int resourceId, String name, String defValue) {
         if (name == null || name.isEmpty())
             name = defValue;
 
@@ -236,6 +235,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void resetKnobWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
+        // We need to position knob knowing the pad width and height, but they are not
+        // available during onCreate nor onResume, so we have to listen to the layout
+        // listener to reset initial positions of knobs
         padView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             updateKnob(padView, knobView, pos);
             attachKnobMovement(padView, knobView, pos);
@@ -294,11 +296,12 @@ public class MainActivity extends AppCompatActivity {
 
         mConnect.setEnabled(true);
         if (mSerialConnection != null && mSerialConnection.isConnected()) {
-            mConnect.setText("Disconnect");
+            allowConnection(true, "Disconnect");
             mConnect.setOnClickListener(view -> disconnect(null));
         } else {
-            mConnect.setText("Connect");
+            allowConnection(true, "Connect");
             mConnect.setOnClickListener(view -> {
+                allowConnection(false, null);
                 mStatus.setText("Connecting...");
                 mConnect.setEnabled(false);
                 connect();
@@ -342,7 +345,8 @@ public class MainActivity extends AppCompatActivity {
         final Button connectBtn = findViewById(R.id.connect);
         final Spinner spinner = findViewById(R.id.btDevice);
 
-        connectBtn.setText(buttonLabel);
+        if (buttonLabel != null)
+            connectBtn.setText(buttonLabel);
         connectBtn.setEnabled(allow);
         spinner.setEnabled(allow);
     }
@@ -361,6 +365,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (selectedPos < 0) {
             resetConnectButton();
+            allowConnection(true, null);
             mStatus.setText("No BT connection selected");
             return;
         }
@@ -432,7 +437,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean mStateE;
 
     private ArrayList<ConnectionFactory.RemoteDevice> mRemoteDevices;
-    private CompositeDisposable mCompositeDisposable = new CompositeDisposable();
+    private final CompositeDisposable mCompositeDisposable = new CompositeDisposable();
 
     private Connection mSerialConnection;
 }

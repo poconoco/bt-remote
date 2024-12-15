@@ -1,6 +1,9 @@
-package com.nocomake.serialremote.conn;
+package com.nocomake.serialremote.connection;
 
 import android.content.Context;
+
+import com.nocomake.serialremote.connection.impls.BluetoothConnection;
+import com.nocomake.serialremote.connection.impls.TCPConnection;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
