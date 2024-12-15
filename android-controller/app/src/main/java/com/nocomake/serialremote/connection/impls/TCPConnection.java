@@ -1,8 +1,10 @@
-package com.nocomake.serialremote.conn;
+package com.nocomake.serialremote.connection.impls;
+
+import com.nocomake.serialremote.connection.Connection;
 
 import io.reactivex.disposables.Disposable;
 
-public class TCPConnection extends Connection {
+public class TCPConnection implements Connection {
     @Override
     public Disposable connect(Runnable mOnConnected) {
         return null;
