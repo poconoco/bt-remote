@@ -1,7 +1,6 @@
 package com.nocomake.serialremote;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
@@ -22,22 +21,31 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
+import com.google.common.primitives.Booleans;
 import com.nocomake.serialremote.connection.Connection;
 import com.nocomake.serialremote.connection.ConnectionFactory;
+
+import com.nocomake.serialremote.protocol.Packet;
+import com.nocomake.serialremote.protocol.Protocol;
+import com.nocomake.serialremote.protocol.ProtocolFactory;
+
+
 
 import SerialRemote.R;
 
@@ -56,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         mStatus = findViewById(R.id.status);
         mDeviceSelection = findViewById(R.id.btDevice);
+        mProtocol = ProtocolFactory.createProtocol();
 
         mLeftJoyPos = new PointF(0.5f, 0.5f);
         mRightJoyPos = new PointF(0.5f, 0.5f);
@@ -206,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
         mDeviceSelection.setAdapter(spinnerAdapter);
 
         resetConnectButton();
-        resetSwitchButtons();
+        resetOtherInputs();
     }
 
     private void scheduleSend() {
@@ -215,20 +224,21 @@ public class MainActivity extends AppCompatActivity {
                     if (mSerialConnection == null || ! mSerialConnection.isConnected())
                         return;
 
-                    int x1 = Math.round(mLeftJoyPos.x * 100);
-                    int y1 = 100 - Math.round(mLeftJoyPos.y * 100);
+                    final Packet packet = new Packet();
+                    System.arraycopy(
+                            Booleans.concat(switchesState, buttonsState),
+                            0,
+                            packet.switches,
+                            0,
+                            packet.switches.length
+                    );
+                    packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255);
+                    packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255);
+                    packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255);
+                    packet.axes[3] = (byte)Math.round(mRightJoyPos.y * 255);
+                    //packet.sliders[0] =
 
-                    int x2 = Math.round(mRightJoyPos.x * 100);
-                    int y2 = 100 - Math.round(mRightJoyPos.y * 100);
-
-                    String packet = String.format(
-                            "MX%03dY%03dA%dB%d", x1, y1,
-                            mStateA ? 1 : 0,
-                            mStateE ? 1 : 0);
-                    mStatus.setText(packet);
-
-                    mSerialConnection.send(packet.getBytes());
-
+                    mSerialConnection.send(mProtocol.serialize(packet));
                     scheduleSend();
                 },
                 100);
@@ -274,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
                     final float y = (motionEvent.getY() - knobH / 2) / (height - knobH);
 
                     output.x = clamp(x, 0, 1);
-                    output.y = clamp(y, 0, 1);
+                    output.y = 1 - clamp(y, 0, 1);
 
                     that.updateKnob(padView, knobView, output);
                     return true;
@@ -310,30 +320,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void resetSwitchButtons() {
-        @SuppressLint("UseSwitchCompatOrMaterialCode") final SwitchCompat mSwA = findViewById(R.id.switchA);
-        final Button mBtnE = findViewById(R.id.buttonE);
+    private void resetOtherInputs() {
+        final LinkedList<Switch> switches = new LinkedList<>();
+        final LinkedList<Button> buttons = new LinkedList<>();
+        final LinkedList<SeekBar> sliders = new LinkedList<>();
 
-        mSwA.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mStateA = isChecked;
-            }
-        });
+        switches.add(findViewById(R.id.switchA));
+        switches.add(findViewById(R.id.switchB));
+        switches.add(findViewById(R.id.switchC));
+        switches.add(findViewById(R.id.switchD));
 
-        mBtnE.setOnTouchListener((view1, motionEvent) -> {
-            final int action = motionEvent.getActionMasked();
+        buttons.add(findViewById(R.id.buttonE));
+        buttons.add(findViewById(R.id.buttonF));
+        buttons.add(findViewById(R.id.buttonG));
+        buttons.add(findViewById(R.id.buttonH));
 
-            switch (action) {
-                case MotionEvent.ACTION_DOWN:
-                    mStateE = true;
-                    break;
-                case MotionEvent.ACTION_UP:
-                    mStateE = false;
-                    break;
-            }
+        sliders.add(findViewById(R.id.sliderL));
+        sliders.add(findViewById(R.id.sliderR));
 
-            return false;
-        });
+        switchesState = new boolean[switches.size()];
+        buttonsState = new boolean[buttons.size()];
+        sliderPositions = new byte[sliders.size()];
+
+        for (int i = 0; i < switches.size(); i++) {
+            int i_ = i;
+            switches.get(i).setOnCheckedChangeListener(
+                    (view, isChecked) -> switchesState[i_] = isChecked);
+        }
+
+        for (int i = 0; i < buttons.size(); i++) {
+            int i_ = i;
+            buttons.get(i).setOnTouchListener((view1, motionEvent) -> {
+                final int action = motionEvent.getActionMasked();
+
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        buttonsState[i_] = true;
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        buttonsState[i_] = false;
+                        break;
+                }
+
+                return false;
+            });
+        }
+
+        for (int i = 0; i < sliders.size(); i++) {
+
+        }
     }
 
     private void setTerminalText(String text) {
@@ -433,11 +468,13 @@ public class MainActivity extends AppCompatActivity {
     // State to be sent
     private PointF mLeftJoyPos;
     private PointF mRightJoyPos;
-    private boolean mStateA;
-    private boolean mStateE;
+    private boolean[] switchesState;
+    private boolean[] buttonsState;
+    private byte[] sliderPositions;
 
     private ArrayList<ConnectionFactory.RemoteDevice> mRemoteDevices;
     private final CompositeDisposable mCompositeDisposable = new CompositeDisposable();
 
     private Connection mSerialConnection;
+    Protocol mProtocol;
 }
