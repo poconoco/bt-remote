@@ -101,6 +101,7 @@
 
                         <SeekBar
                             android:id="@+id/sliderL"
+                            android:max="255"
                             android:layout_width="0dp"
                             android:layout_height="42dp"
                             app:layout_constraintBottom_toBottomOf="parent"
@@ -130,6 +131,7 @@
 
                         <SeekBar
                             android:id="@+id/sliderR"
+                            android:max="255"
                             android:layout_width="0dp"
                             android:layout_height="42dp"
                             app:layout_constraintBottom_toBottomOf="parent"
