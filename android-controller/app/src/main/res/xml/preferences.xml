@@ -69,5 +69,15 @@
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="Other">
+        <EditTextPreference
+            android:key="sendPeriod"
+            android:title="Packet send period (ms)"
+            android:defaultValue="@integer/defaultSendPeriod"
+            android:maxLength="4"
+            android:inputType="numberDecimal"
+            android:digits="0123456789"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
 
 </androidx.preference.PreferenceScreen>
