@@ -7,7 +7,7 @@ android {
     defaultConfig {
         applicationId "com.nocomake.serialremote"
         compileSdk 35
-        targetSdk 35
+        targetSdk 34
         minSdkVersion 27
         versionCode 1
         versionName "1.0"

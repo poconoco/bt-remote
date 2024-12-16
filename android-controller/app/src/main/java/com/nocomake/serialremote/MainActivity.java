@@ -1,6 +1,7 @@
 package com.nocomake.serialremote;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
@@ -28,6 +29,7 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -176,6 +178,19 @@ public class MainActivity extends AppCompatActivity {
         setViewVisibility(R.id.rightJoystick, sharedPreferences.getBoolean("showJoyR", true));
         setViewVisibility(R.id.leftKnob, sharedPreferences.getBoolean("showJoyL", true));
         setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
+
+        final int defaultSendPeriod = getResources().getInteger(R.integer.defaultSendPeriod);
+        try {
+            mSendPeriod = Integer.parseInt(
+                    sharedPreferences.getString(
+                            "sendPeriod", Integer.toString(defaultSendPeriod)));
+        } catch (NumberFormatException e) {
+            Toast.makeText(
+                    this,
+                    "Invalid preference value for send period",
+                    Toast.LENGTH_SHORT).show();
+            mSendPeriod = defaultSendPeriod;
+        }
     }
 
     private void setViewText(int resourceId, String name, String defValue) {
@@ -225,13 +240,10 @@ public class MainActivity extends AppCompatActivity {
                         return;
 
                     final Packet packet = new Packet();
+                    final boolean[] allSwitchesState = Booleans.concat(switchesState, buttonsState);
+                    assert packet.switches.length == allSwitchesState.length;
                     System.arraycopy(
-                            Booleans.concat(switchesState, buttonsState),
-                            0,
-                            packet.switches,
-                            0,
-                            packet.switches.length
-                    );
+                            allSwitchesState, 0, packet.switches, 0, packet.switches.length);
                     packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255);
                     packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255);
                     packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255);
@@ -241,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
                     mSerialConnection.send(mProtocol.serialize(packet));
                     scheduleSend();
                 },
-                100);
+                mSendPeriod); // Approximately, we do not compensate for the execution time, etc
     }
 
     private void resetKnobWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
@@ -321,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private void resetOtherInputs() {
-        final LinkedList<Switch> switches = new LinkedList<>();
+        final LinkedList<SwitchCompat> switches = new LinkedList<>();
         final LinkedList<Button> buttons = new LinkedList<>();
         final LinkedList<SeekBar> sliders = new LinkedList<>();
 
@@ -464,6 +476,7 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mStatus;
     private Spinner mDeviceSelection;
+    private int mSendPeriod;
 
     // State to be sent
     private PointF mLeftJoyPos;
