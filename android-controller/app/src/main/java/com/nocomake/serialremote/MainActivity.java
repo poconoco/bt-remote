@@ -27,14 +27,17 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
@@ -240,15 +243,17 @@ public class MainActivity extends AppCompatActivity {
                         return;
 
                     final Packet packet = new Packet();
-                    final boolean[] allSwitchesState = Booleans.concat(switchesState, buttonsState);
+                    final boolean[] allSwitchesState = Booleans.concat(mSwitchesState, mButtonsState);
                     assert packet.switches.length == allSwitchesState.length;
+                    assert packet.sliders.length == mSliderPositions.length;
                     System.arraycopy(
                             allSwitchesState, 0, packet.switches, 0, packet.switches.length);
+                    System.arraycopy(
+                            mSliderPositions, 0, packet.sliders, 0, packet.sliders.length);
                     packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255);
                     packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255);
                     packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255);
                     packet.axes[3] = (byte)Math.round(mRightJoyPos.y * 255);
-                    //packet.sliders[0] =
 
                     mSerialConnection.send(mProtocol.serialize(packet));
                     scheduleSend();
@@ -271,26 +276,39 @@ public class MainActivity extends AppCompatActivity {
         int maxY = padView.getHeight() - knobView.getHeight();
 
         knobView.setX(padView.getX() + pos.x * maxX);
-        knobView.setY(padView.getY() + pos.y * maxY);
+        knobView.setY(padView.getY() + (1 - pos.y) * maxY);
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private void attachKnobMovement(ImageView padView, RelativeLayout knobView, PointF output) {
-
         final MainActivity that = this;
         padView.setOnTouchListener((view1, motionEvent) -> {
             final int action = motionEvent.getActionMasked();
+            final float width = view1.getWidth();
+            final float height = view1.getHeight();
+
+            final float knobW = (float) knobView.getWidth();
+            final float knobH = (float) knobView.getHeight();
+
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
+                    // Distance from tap to center should be less than knob radius
+                    final float xDist = width / 2 - motionEvent.getX();
+                    final float yDist = height / 2 - motionEvent.getY();
+                    if (Math.pow(xDist, 2) + Math.pow(yDist, 2) > Math.pow(knobW / 2, 2))
+                        return true;
+
+                    grabbedPads.add(padView);
                 case MotionEvent.ACTION_MOVE:
+                    if (! grabbedPads.contains(padView))
+                        return true;
+
                     int[] pos = new int[2];
                     view1.getLocationOnScreen(pos);
 
-                    final float width = view1.getWidth();
-                    final float height = view1.getHeight();
-
-                    final float knobW = (float) knobView.getWidth();
-                    final float knobH = (float) knobView.getHeight();
+                    // You need to tap into a knob to grab it, otherwise discard the tap down action
+                    if (action == MotionEvent.ACTION_DOWN) {
+                    }
 
                     final float x = (motionEvent.getX() - knobW / 2) / (width - knobW);
                     final float y = (motionEvent.getY() - knobH / 2) / (height - knobH);
@@ -302,6 +320,7 @@ public class MainActivity extends AppCompatActivity {
                     return true;
 
                 case MotionEvent.ACTION_UP:
+                    grabbedPads.remove(padView);
                     output.x = 0.5f;
                     output.y = 0.5f;
 
@@ -350,14 +369,14 @@ public class MainActivity extends AppCompatActivity {
         sliders.add(findViewById(R.id.sliderL));
         sliders.add(findViewById(R.id.sliderR));
 
-        switchesState = new boolean[switches.size()];
-        buttonsState = new boolean[buttons.size()];
-        sliderPositions = new byte[sliders.size()];
+        mSwitchesState = new boolean[switches.size()];
+        mButtonsState = new boolean[buttons.size()];
+        mSliderPositions = new byte[sliders.size()];
 
         for (int i = 0; i < switches.size(); i++) {
             int i_ = i;
             switches.get(i).setOnCheckedChangeListener(
-                    (view, isChecked) -> switchesState[i_] = isChecked);
+                    (view, isChecked) -> mSwitchesState[i_] = isChecked);
         }
 
         for (int i = 0; i < buttons.size(); i++) {
@@ -367,10 +386,10 @@ public class MainActivity extends AppCompatActivity {
 
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
-                        buttonsState[i_] = true;
+                        mButtonsState[i_] = true;
                         break;
                     case MotionEvent.ACTION_UP:
-                        buttonsState[i_] = false;
+                        mButtonsState[i_] = false;
                         break;
                 }
 
@@ -379,7 +398,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         for (int i = 0; i < sliders.size(); i++) {
-
+            mSliderPositions[i] = (byte)sliders.get(i).getProgress();
         }
     }
 
@@ -476,14 +495,16 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView mStatus;
     private Spinner mDeviceSelection;
+    final Set<View> grabbedPads = new HashSet<>();
+
     private int mSendPeriod;
 
     // State to be sent
     private PointF mLeftJoyPos;
     private PointF mRightJoyPos;
-    private boolean[] switchesState;
-    private boolean[] buttonsState;
-    private byte[] sliderPositions;
+    private boolean[] mSwitchesState;
+    private boolean[] mButtonsState;
+    private byte[] mSliderPositions;
 
     private ArrayList<ConnectionFactory.RemoteDevice> mRemoteDevices;
     private final CompositeDisposable mCompositeDisposable = new CompositeDisposable();
