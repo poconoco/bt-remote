@@ -250,10 +250,12 @@ public class MainActivity extends AppCompatActivity {
                             allSwitchesState, 0, packet.switches, 0, packet.switches.length);
                     System.arraycopy(
                             mSliderPositions, 0, packet.sliders, 0, packet.sliders.length);
-                    packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255);
-                    packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255);
-                    packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255);
-                    packet.axes[3] = (byte)Math.round(mRightJoyPos.y * 255);
+
+                    // For axes we don't have normalized to byte range values yet, so normalize here
+                    packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255 - 128);
+                    packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255 - 128);
+                    packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255 - 128);
+                    packet.axes[3] = (byte)Math.round(mRightJoyPos.y * 255 - 128);
 
                     mSerialConnection.send(mProtocol.serialize(packet));
                     scheduleSend();
@@ -398,7 +400,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         for (int i = 0; i < sliders.size(); i++) {
-            mSliderPositions[i] = (byte)sliders.get(i).getProgress();
+            // Shift 0..255 slider range to segned byte range -128..127
+            mSliderPositions[i] = (byte)(sliders.get(i).getProgress() - 128);
         }
     }
 
