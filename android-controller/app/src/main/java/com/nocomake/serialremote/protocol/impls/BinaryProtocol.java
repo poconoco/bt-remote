@@ -43,8 +43,8 @@ public class BinaryProtocol implements Protocol {
         // 1 byte - checksum
         result[p++] = checksum;
 
-        // The whole packet expected to be 12 bytes
-        assert p == 12;
+        // The whole packet expected to be 15 bytes
+        assert p == 15;
 
         return result;
     }
