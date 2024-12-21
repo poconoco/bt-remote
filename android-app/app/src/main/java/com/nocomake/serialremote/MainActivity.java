@@ -406,6 +406,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setTerminalText(String text) {
+        text = text.replace('\t', '\n');
         final TextView receiveTerminal = findViewById(R.id.textTerminal);
         receiveTerminal.setText(text);
     }
