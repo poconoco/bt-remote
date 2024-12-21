@@ -3,7 +3,7 @@ package com.nocomake.serialremote;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
-import SerialRemote.R;
+import DiyRemote.R;
 
 public class PrefsActivity extends AppCompatActivity {
     @Override
