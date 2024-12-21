@@ -8,7 +8,7 @@ import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.Preference;
 
-import SerialRemote.R;
+import DiyRemote.R;
 
 public class PrefsFragment extends PreferenceFragmentCompat {
     @Override

@@ -52,7 +52,7 @@ import com.nocomake.serialremote.protocol.ProtocolFactory;
 
 
 
-import SerialRemote.R;
+import DiyRemote.R;
 
 public class MainActivity extends AppCompatActivity {
 
