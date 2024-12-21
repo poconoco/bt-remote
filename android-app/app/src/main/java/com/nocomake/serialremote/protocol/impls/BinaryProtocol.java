@@ -6,7 +6,7 @@ import com.nocomake.serialremote.protocol.Protocol;
 public class BinaryProtocol implements Protocol {
     @Override
     public byte[] serialize(Packet packet) {
-        final byte[] result = new byte[16];
+        final byte[] result = new byte[15];
 
         // packet pointer
         int p = 0;
