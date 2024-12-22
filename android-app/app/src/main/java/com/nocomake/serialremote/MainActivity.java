@@ -86,8 +86,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        resetKnobWhenPadReady(findViewById(R.id.leftJoystick), findViewById(R.id.leftKnob), mLeftJoyPos);
-        resetKnobWhenPadReady(findViewById(R.id.rightJoystick), findViewById(R.id.rightKnob), mRightJoyPos);
+        attachJoystickWhenPadReady(findViewById(R.id.leftJoystick), findViewById(R.id.leftKnob), mLeftJoyPos);
+        attachJoystickWhenPadReady(findViewById(R.id.rightJoystick), findViewById(R.id.rightKnob), mRightJoyPos);
+
+        attachSwitches();
+        attachButtons();
+        attachSliders();
 
         initSettingsButton();
         applyPreferences();
@@ -255,9 +259,7 @@ public class MainActivity extends AppCompatActivity {
         mDeviceSelection.setAdapter(spinnerAdapter);
 
         loadSelectedDevice();
-
         resetConnectButton();
-        resetOtherInputs();
     }
 
     private void scheduleSend() {
@@ -287,13 +289,13 @@ public class MainActivity extends AppCompatActivity {
                 mSendPeriod); // Approximately, we do not compensate for the execution time, etc
     }
 
-    private void resetKnobWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
+    private void attachJoystickWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
         // We need to position knob knowing the pad width and height, but they are not
         // available during onCreate nor onResume, so we have to listen to the layout
         // listener to reset initial positions of knobs
         padView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             updateKnob(padView, knobView, pos);
-            attachKnobMovement(padView, knobView, pos);
+            attachJoysticks(padView, knobView, pos);
         });
     }
 
@@ -305,8 +307,26 @@ public class MainActivity extends AppCompatActivity {
         knobView.setY(padView.getY() + (1 - pos.y) * maxY);
     }
 
+    private void resetConnectButton() {
+        final Button mConnect = findViewById(R.id.connect);
+
+        mConnect.setEnabled(true);
+        if (mSerialConnection != null && mSerialConnection.isConnected()) {
+            allowConnection(true, "Disconnect");
+            mConnect.setOnClickListener(view -> disconnect(null));
+        } else {
+            allowConnection(true, "Connect");
+            mConnect.setOnClickListener(view -> {
+                allowConnection(false, null);
+                mStatus.setText("Connecting...");
+                mConnect.setEnabled(false);
+                connect();
+            });
+        }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
-    private void attachKnobMovement(ImageView padView, RelativeLayout knobView, PointF output) {
+    private void attachJoysticks(ImageView padView, RelativeLayout knobView, PointF output) {
         final MainActivity that = this;
         padView.setOnTouchListener((view1, motionEvent) -> {
             final int action = motionEvent.getActionMasked();
@@ -358,52 +378,33 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void resetConnectButton() {
-        final Button mConnect = findViewById(R.id.connect);
-
-        mConnect.setEnabled(true);
-        if (mSerialConnection != null && mSerialConnection.isConnected()) {
-            allowConnection(true, "Disconnect");
-            mConnect.setOnClickListener(view -> disconnect(null));
-        } else {
-            allowConnection(true, "Connect");
-            mConnect.setOnClickListener(view -> {
-                allowConnection(false, null);
-                mStatus.setText("Connecting...");
-                mConnect.setEnabled(false);
-                connect();
-            });
-        }
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    private void resetOtherInputs() {
+    private void attachSwitches() {
         final LinkedList<SwitchCompat> switches = new LinkedList<>();
-        final LinkedList<Button> buttons = new LinkedList<>();
-        final LinkedList<SeekBar> sliders = new LinkedList<>();
 
         switches.add(findViewById(R.id.switchA));
         switches.add(findViewById(R.id.switchB));
         switches.add(findViewById(R.id.switchC));
         switches.add(findViewById(R.id.switchD));
 
-        buttons.add(findViewById(R.id.buttonE));
-        buttons.add(findViewById(R.id.buttonF));
-        buttons.add(findViewById(R.id.buttonG));
-        buttons.add(findViewById(R.id.buttonH));
-
-        sliders.add(findViewById(R.id.sliderL));
-        sliders.add(findViewById(R.id.sliderR));
-
         mSwitchesState = new boolean[switches.size()];
-        mButtonsState = new boolean[buttons.size()];
-        mSliderPositions = new byte[sliders.size()];
 
         for (int i = 0; i < switches.size(); i++) {
             int i_ = i;
             switches.get(i).setOnCheckedChangeListener(
                     (view, isChecked) -> mSwitchesState[i_] = isChecked);
         }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void attachButtons() {
+        final LinkedList<Button> buttons = new LinkedList<>();
+
+        buttons.add(findViewById(R.id.buttonE));
+        buttons.add(findViewById(R.id.buttonF));
+        buttons.add(findViewById(R.id.buttonG));
+        buttons.add(findViewById(R.id.buttonH));
+
+        mButtonsState = new boolean[buttons.size()];
 
         for (int i = 0; i < buttons.size(); i++) {
             int i_ = i;
@@ -422,10 +423,38 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             });
         }
+    }
+
+    private void attachSliders() {
+        final LinkedList<SeekBar> sliders = new LinkedList<>();
+
+
+
+        sliders.add(findViewById(R.id.sliderL));
+        sliders.add(findViewById(R.id.sliderR));
+
+        mSliderPositions = new byte[sliders.size()];
 
         for (int i = 0; i < sliders.size(); i++) {
-            // Shift 0..255 slider range to segned byte range -128..127
-            mSliderPositions[i] = (byte)(sliders.get(i).getProgress() - 128);
+            // 0..255 slider range needs to be shifted to signed byte range -128..127,
+            // hence the -128 when assigning to mSliderPositions
+            final SeekBar slider = sliders.get(i);
+            int i_ = i;
+            // Reset initial position
+            mSliderPositions[i_] = (byte)(slider.getProgress() - 128);
+            slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar slider, int progress, boolean fromUser) {
+                    // Update when slider updates
+                    mSliderPositions[i_] = (byte)(progress - 128);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {}
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {}
+            });
         }
     }
 
