@@ -27,7 +27,6 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -289,15 +288,20 @@ public class MainActivity extends AppCompatActivity {
                         return;
 
                     final Packet packet = new Packet();
-                    final boolean[] allSwitchesState = Booleans.concat(mSwitchesState, mButtonsState);
-                    assert packet.switches.length == allSwitchesState.length;
+
+                    assert packet.switches.length == mSwitchesState.length + mButtonsState.length;
                     assert packet.sliders.length == mSliderPositions.length;
+
+                    // Pack switches together with buttons, they are all booleans
+                    final boolean[] allSwitchesState = Booleans.concat(mSwitchesState, mButtonsState);
                     System.arraycopy(
                             allSwitchesState, 0, packet.switches, 0, packet.switches.length);
-                    System.arraycopy(
-                            mSliderPositions, 0, packet.sliders, 0, packet.sliders.length);
 
-                    // For axes we don't have normalized to byte range values yet, so normalize here
+                    // Normalize sliders positions to signed with center i 0
+                    for (int i = 0; i < mSliderPositions.length; i++)
+                        packet.sliders[i] = (byte)(mSliderPositions[i] - 128);
+
+                    // Normalize joystick positions as well
                     packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255 - 128);
                     packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255 - 128);
                     packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255 - 128);
@@ -474,12 +478,12 @@ public class MainActivity extends AppCompatActivity {
             final SeekBar slider = sliders.get(i);
             int i_ = i;
             // Reset initial position
-            mSliderPositions[i_] = (byte)(slider.getProgress() - 128);
+            mSliderPositions[i_] = (byte)(slider.getProgress());
             slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar slider, int progress, boolean fromUser) {
                     // Update when slider updates
-                    mSliderPositions[i_] = (byte)(progress - 128);
+                    mSliderPositions[i_] = (byte)(progress);
                 }
 
                 @Override
