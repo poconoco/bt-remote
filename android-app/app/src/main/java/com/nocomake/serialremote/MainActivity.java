@@ -47,13 +47,12 @@ import com.nocomake.serialremote.protocol.Packet;
 import com.nocomake.serialremote.protocol.Protocol;
 import com.nocomake.serialremote.protocol.ProtocolFactory;
 
-
-
 import DiyRemote.R;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final int BT_PERMISSION_REQUEST = 100;
+    private static final String SELECTED_DEVICE_KEY = "SELECTED_DEVICE_KEY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
                 final TextView textView = ((TextView) parent.getChildAt(0));
                 if (textView != null)
                     textView.setTextColor(Color.WHITE);
+
+                saveSelectedDevice();
             }
 
             @Override
@@ -158,6 +159,35 @@ public class MainActivity extends AppCompatActivity {
         //                      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
     }
 
+    private void saveSelectedDevice() {
+        final ConnectionFactory.RemoteDevice remoteDevice = getSelectedRemote();
+        if (remoteDevice == null)
+            return;
+
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString(SELECTED_DEVICE_KEY, remoteDevice.address);
+        editor.apply();
+    }
+
+    private void loadSelectedDevice() {
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(this);
+
+        final String selectedDeviceAddress = sharedPreferences.getString(SELECTED_DEVICE_KEY, null);
+        if (selectedDeviceAddress == null)
+            return;
+
+        for (int i = 0; i < mRemoteDevices.size(); i++) {
+            final ConnectionFactory.RemoteDevice device = mRemoteDevices.get(i);
+            if (device.address.equals(selectedDeviceAddress)) {
+                mDeviceSelection.setSelection(i);
+                break;
+            }
+        }
+    }
+
     private void applyPreferences() {
         final SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
@@ -223,6 +253,8 @@ public class MainActivity extends AppCompatActivity {
 
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mDeviceSelection.setAdapter(spinnerAdapter);
+
+        loadSelectedDevice();
 
         resetConnectButton();
         resetOtherInputs();
@@ -413,6 +445,19 @@ public class MainActivity extends AppCompatActivity {
         spinner.setEnabled(allow);
     }
 
+    private ConnectionFactory.RemoteDevice getSelectedRemote() {
+        final int selectedPos = mDeviceSelection.getSelectedItemPosition();
+
+        if (selectedPos < 0) {
+            resetConnectButton();
+            allowConnection(true, null);
+            mStatus.setText("No remote device selected");
+            return null;
+        }
+
+        return mRemoteDevices.get(selectedPos);
+    }
+
     private void connect() {
         if (mSerialConnection != null) {
             if (mSerialConnection.isConnected()) {
@@ -423,16 +468,10 @@ public class MainActivity extends AppCompatActivity {
             mSerialConnection = null;
         }
 
-        final int selectedPos = mDeviceSelection.getSelectedItemPosition();
-
-        if (selectedPos < 0) {
-            resetConnectButton();
-            allowConnection(true, null);
-            mStatus.setText("No BT connection selected");
+        final ConnectionFactory.RemoteDevice selectedDevice = getSelectedRemote();
+        if (selectedDevice == null)
             return;
-        }
 
-        final ConnectionFactory.RemoteDevice selectedDevice = mRemoteDevices.get(selectedPos);
         mSerialConnection = ConnectionFactory.createConnection(
                 selectedDevice,
                 this::onMessageReceived,
