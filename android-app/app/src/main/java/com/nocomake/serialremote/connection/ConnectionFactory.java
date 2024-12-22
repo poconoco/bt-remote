@@ -1,6 +1,7 @@
 package com.nocomake.serialremote.connection;
 
 import android.content.Context;
+import android.widget.Toast;
 
 import com.nocomake.serialremote.connection.impls.BluetoothConnection;
 import com.nocomake.serialremote.connection.impls.TCPConnection;
@@ -10,32 +11,52 @@ import java.util.function.Consumer;
 
 public class ConnectionFactory {
     public static class RemoteDevice {
-        public RemoteDevice(String name_, String address_) {
+        public enum Type {
+            BT,
+            TCP
+        }
+
+        public RemoteDevice(Type type_, String name_, String address_) {
+            type = type_;
             name = name_;
             address = address_;
         }
 
-        public String name;
-        public String address;
+        final public String name;
+        final public String address;
+        final public Type type;
     }
 
-    public static ArrayList<RemoteDevice> getRemoteDevices(Context context, Runnable onError) {
+    public static ArrayList<RemoteDevice> getRemoteDevices(Context context) {
         final ArrayList<RemoteDevice> bluetoothDevices =
-                (new BluetoothConnection(null, null, null, onError, context))
-                        .getRemoteDevices(context);
+                BluetoothConnection.getRemoteDevices(context);
 
-        // TODO: Also fetch TCP devices
+        final ArrayList<RemoteDevice> tcpDevices =
+                TCPConnection.getRemoteDevices(context);
 
-        return bluetoothDevices;
+        final ArrayList<RemoteDevice> result = new ArrayList<>();
+        result.addAll(bluetoothDevices);
+        result.addAll(tcpDevices);
+
+        return result;
     }
 
     public static Connection createConnection(
             RemoteDevice remoteDevice,
-            Runnable onSent,
             Consumer<String> onReceived,
             Runnable onError,
             Context context) {
-        // TODO: determine if remoteDevice needs a BT or TCP connection
-        return new BluetoothConnection(remoteDevice, onSent, onReceived, onError, context);
+        switch (remoteDevice.type) {
+            case BT:
+                return new BluetoothConnection(remoteDevice, onReceived, onError, context);
+            case TCP:
+                return new TCPConnection(remoteDevice, onReceived, onError, context);
+            default:
+                Toast.makeText(
+                        context,
+                        "Unknown remote type: "+remoteDevice.type,
+                        Toast.LENGTH_LONG).show();
+                return null;
+        }
     }
 }

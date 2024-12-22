@@ -28,15 +28,12 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import io.reactivex.disposables.CompositeDisposable;
@@ -107,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.BLUETOOTH_SCAN},
                     BT_PERMISSION_REQUEST);
         } else {
-            populatePairedDevices();
+            populateRemoteDevices();
         }
     }
 
@@ -122,6 +119,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         applyPreferences();
+
+        if (mSerialConnection == null ||
+                (! mSerialConnection.isConnected() && ! mSerialConnection.isConnecting())) {
+            populateRemoteDevices();
+        }
     }
 
     @Override
@@ -134,8 +136,7 @@ public class MainActivity extends AppCompatActivity {
             if (grantResults.length > 0
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED
                     && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                populatePairedDevices();
-                populatePairedDevices();
+                populateRemoteDevices();
             } else {
                 mStatus.setText("Check BT permission");
             }
@@ -183,17 +184,8 @@ public class MainActivity extends AppCompatActivity {
         setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
 
         final int defaultSendPeriod = getResources().getInteger(R.integer.defaultSendPeriod);
-        try {
-            mSendPeriod = Integer.parseInt(
-                    sharedPreferences.getString(
-                            "sendPeriod", Integer.toString(defaultSendPeriod)));
-        } catch (NumberFormatException e) {
-            Toast.makeText(
-                    this,
-                    "Invalid preference value for send period",
-                    Toast.LENGTH_SHORT).show();
-            mSendPeriod = defaultSendPeriod;
-        }
+        mSendPeriod = Integer.parseInt(sharedPreferences.getString(
+                "sendPeriod", Integer.toString(defaultSendPeriod)));
     }
 
     private void setViewText(int resourceId, String name, String defValue) {
@@ -217,8 +209,8 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void populatePairedDevices() {
-        mRemoteDevices = ConnectionFactory.getRemoteDevices(this, this::onConnectionError);
+    private void populateRemoteDevices() {
+        mRemoteDevices = ConnectionFactory.getRemoteDevices(this);
         final List<String> names = Arrays.asList(mRemoteDevices
                 .stream()
                 .map(remoteDevice -> remoteDevice.name)
@@ -443,13 +435,18 @@ public class MainActivity extends AppCompatActivity {
         final ConnectionFactory.RemoteDevice selectedDevice = mRemoteDevices.get(selectedPos);
         mSerialConnection = ConnectionFactory.createConnection(
                 selectedDevice,
-                this::onPacketSent,
                 this::onMessageReceived,
                 this::onConnectionError,
                 this);
 
+        if (mSerialConnection == null) {
+            onConnectionError();
+            return;
+        }
+
         final Disposable d = mSerialConnection.connect(this::onConnected);
-        mCompositeDisposable.add(d);
+        if (d != null)
+            mCompositeDisposable.add(d);
     }
 
     private void disconnect(final String message) {
@@ -463,14 +460,15 @@ public class MainActivity extends AppCompatActivity {
             mSerialConnection = null;
         }
 
-        resetConnectButton();
-
         if (message != null) {
             mStatus.setText(message);
         } else {
             mStatus.setText("Disconnected");
             setTerminalText("");
         }
+
+        resetConnectButton();
+        populateRemoteDevices();
     }
 
     private void onConnected() {
@@ -478,10 +476,6 @@ public class MainActivity extends AppCompatActivity {
         setTerminalText("");
         resetConnectButton();
         scheduleSend();
-    }
-
-    private void onPacketSent() {
-        // Do nothing
     }
 
     private void onMessageReceived(String message) {
