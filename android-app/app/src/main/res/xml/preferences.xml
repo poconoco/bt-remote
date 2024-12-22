@@ -6,7 +6,7 @@
         <EditTextPreference
             android:key="ipAddress"
             android:title="IP address"
-            android:defaultValue="192.168.1.100"
+            android:defaultValue="@string/defaultTcpAddress"
             app:useSimpleSummaryProvider="true" />
         <EditTextPreference
             android:key="ipPort"

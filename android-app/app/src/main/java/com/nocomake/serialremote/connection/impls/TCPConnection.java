@@ -2,7 +2,6 @@ package com.nocomake.serialremote.connection.impls;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
@@ -33,8 +32,12 @@ public class TCPConnection implements Connection {
         final SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(context);
 
-        final int defaultPort = context.getResources().getInteger(R.integer.defaultTcpPort);
-        final String ipAddress = sharedPreferences.getString("ipAddress", "");
+        final int defaultPort =
+                context.getResources().getInteger(R.integer.defaultTcpPort);
+        final String defaultIpAddress =
+                context.getResources().getString(R.string.defaultTcpAddress);
+        final String ipAddress =
+                sharedPreferences.getString("ipAddress", defaultIpAddress);
         final int ipPort = Integer.parseInt(sharedPreferences.getString(
                 "ipPort", Integer.toString(defaultPort)));
 
