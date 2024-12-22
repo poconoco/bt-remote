@@ -1,12 +1,12 @@
 package com.nocomake.serialremote;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
-import androidx.preference.Preference;
 
 import DiyRemote.R;
 
@@ -17,32 +17,52 @@ public class PrefsFragment extends PreferenceFragmentCompat {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
         setNumericValidator("sendPeriod", "Period", 20, 1000);
+        setNumericValidator("ipPort", "IP port", 1, 65535);
+        setStringValidator(
+                "ipAddress",
+                "IP address",
+                Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$"));
     }
 
     private void setNumericValidator(String prefName, String name, int min, int max) {
         EditTextPreference numericPreference = findPreference(prefName);
         if (numericPreference != null) {
-            numericPreference.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-                @Override
-                public boolean onPreferenceChange(@NonNull Preference preference, Object newValue) {
-                    try {
-                        int value = Integer.parseInt(newValue.toString());
-                        if (value >= min && value <= max) {
-                            return true;
-                        } else {
-                            Toast.makeText(
-                                    getContext(),
-                                    name+" must be between "+min+" and "+max,
-                                    Toast.LENGTH_SHORT).show();
-                            return false;
-                        }
-                    } catch (NumberFormatException e) {
+            numericPreference.setOnPreferenceChangeListener((preference, newValue) -> {
+                try {
+                    int value = Integer.parseInt(newValue.toString());
+                    if (value >= min && value <= max) {
+                        return true;
+                    } else {
                         Toast.makeText(
                                 getContext(),
-                                "Invalid number for "+name,
-                                Toast.LENGTH_SHORT).show();
+                                name+" must be between "+min+" and "+max,
+                                Toast.LENGTH_LONG).show();
                         return false;
                     }
+                } catch (NumberFormatException e) {
+                    Toast.makeText(
+                            getContext(),
+                            "Invalid number for "+name,
+                            Toast.LENGTH_LONG).show();
+                    return false;
+                }
+            });
+        }
+    }
+
+    private void setStringValidator(String prefName, String name, Pattern pattern) {
+        EditTextPreference numericPreference = findPreference(prefName);
+        if (numericPreference != null) {
+            numericPreference.setOnPreferenceChangeListener((preference, newValue) -> {
+                Matcher matcher = pattern.matcher(newValue.toString());
+                if (matcher.matches()) {
+                    return true;
+                } else {
+                    Toast.makeText(
+                            getContext(),
+                            "Invalid value for "+name,
+                            Toast.LENGTH_LONG).show();
+                    return false;
                 }
             });
         }
