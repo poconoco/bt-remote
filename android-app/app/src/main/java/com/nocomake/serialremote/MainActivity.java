@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -53,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int BT_PERMISSION_REQUEST = 100;
     private static final String SELECTED_DEVICE_KEY = "SELECTED_DEVICE_KEY";
+    private static final String SLIDER_KEY_PREFIX = "SLIDER_KEY_PREFIX_";
+    private static final String SWITCH_KEY_PREFIX = "SWITCH_KEY_PREFIX_";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,8 +79,6 @@ public class MainActivity extends AppCompatActivity {
                 final TextView textView = ((TextView) parent.getChildAt(0));
                 if (textView != null)
                     textView.setTextColor(Color.WHITE);
-
-                saveSelectedDevice();
             }
 
             @Override
@@ -89,12 +90,12 @@ public class MainActivity extends AppCompatActivity {
         attachJoystickWhenPadReady(findViewById(R.id.leftJoystick), findViewById(R.id.leftKnob), mLeftJoyPos);
         attachJoystickWhenPadReady(findViewById(R.id.rightJoystick), findViewById(R.id.rightKnob), mRightJoyPos);
 
-        attachSwitches();
-        attachButtons();
+        attachControlSwitches();
+        attachControlButtons();
         attachSliders();
 
         initSettingsButton();
-        applyPreferences();
+        applyConfigurablePreferences();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
@@ -116,19 +117,21 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-
         disconnect(null);
+        saveState();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        applyPreferences();
+        applyConfigurablePreferences();
 
         if (mSerialConnection == null ||
                 (! mSerialConnection.isConnected() && ! mSerialConnection.isConnecting())) {
             populateRemoteDevices();
         }
+
+        loadState();
     }
 
     @Override
@@ -163,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
         //                      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
     }
 
-    private void saveSelectedDevice() {
+    private void saveState() {
         final ConnectionFactory.RemoteDevice remoteDevice = getSelectedRemote();
         if (remoteDevice == null)
             return;
@@ -171,19 +174,37 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        int i = 0;
+        for (SeekBar slider : getSliders())
+            editor.putInt(SLIDER_KEY_PREFIX+i++, slider.getProgress());
+
+        i = 0;
+        for (SwitchCompat switchCtl : getControlSwitches())
+            editor.putBoolean(SWITCH_KEY_PREFIX+i++, switchCtl.isChecked());
+
         editor.putString(SELECTED_DEVICE_KEY, remoteDevice.address);
+
         editor.apply();
     }
 
-    private void loadSelectedDevice() {
+    private void loadState() {
         SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
+
+        int i = 0;
+        for (SeekBar slider : getSliders())
+            slider.setProgress(sharedPreferences.getInt(SLIDER_KEY_PREFIX+i++, 0));
+
+        i = 0;
+        for (SwitchCompat switchCtl : getControlSwitches())
+            switchCtl.setChecked(sharedPreferences.getBoolean(SWITCH_KEY_PREFIX+i++, false));
 
         final String selectedDeviceAddress = sharedPreferences.getString(SELECTED_DEVICE_KEY, null);
         if (selectedDeviceAddress == null)
             return;
 
-        for (int i = 0; i < mRemoteDevices.size(); i++) {
+        for (i = 0; i < mRemoteDevices.size(); i++) {
             final ConnectionFactory.RemoteDevice device = mRemoteDevices.get(i);
             if (device.address.equals(selectedDeviceAddress)) {
                 mDeviceSelection.setSelection(i);
@@ -192,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void applyPreferences() {
+    private void applyConfigurablePreferences() {
         final SharedPreferences sharedPreferences =
                 PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -258,7 +279,6 @@ public class MainActivity extends AppCompatActivity {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mDeviceSelection.setAdapter(spinnerAdapter);
 
-        loadSelectedDevice();
         resetConnectButton();
     }
 
@@ -378,7 +398,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void attachSwitches() {
+    private LinkedList<SwitchCompat> getControlSwitches() {
         final LinkedList<SwitchCompat> switches = new LinkedList<>();
 
         switches.add(findViewById(R.id.switchA));
@@ -386,6 +406,11 @@ public class MainActivity extends AppCompatActivity {
         switches.add(findViewById(R.id.switchC));
         switches.add(findViewById(R.id.switchD));
 
+        return switches;
+    }
+
+    private void attachControlSwitches() {
+        final LinkedList<SwitchCompat> switches = getControlSwitches();
         mSwitchesState = new boolean[switches.size()];
 
         for (int i = 0; i < switches.size(); i++) {
@@ -395,8 +420,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private void attachButtons() {
+    private LinkedList<Button> getControlButtons() {
         final LinkedList<Button> buttons = new LinkedList<>();
 
         buttons.add(findViewById(R.id.buttonE));
@@ -404,6 +428,12 @@ public class MainActivity extends AppCompatActivity {
         buttons.add(findViewById(R.id.buttonG));
         buttons.add(findViewById(R.id.buttonH));
 
+        return buttons;
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void attachControlButtons() {
+        final LinkedList<Button> buttons = getControlButtons();
         mButtonsState = new boolean[buttons.size()];
 
         for (int i = 0; i < buttons.size(); i++) {
@@ -425,14 +455,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void attachSliders() {
+    private LinkedList<SeekBar> getSliders() {
         final LinkedList<SeekBar> sliders = new LinkedList<>();
-
-
 
         sliders.add(findViewById(R.id.sliderL));
         sliders.add(findViewById(R.id.sliderR));
 
+        return sliders;
+    }
+
+    private void attachSliders() {
+        final LinkedList<SeekBar> sliders = getSliders();
         mSliderPositions = new byte[sliders.size()];
 
         for (int i = 0; i < sliders.size(); i++) {
