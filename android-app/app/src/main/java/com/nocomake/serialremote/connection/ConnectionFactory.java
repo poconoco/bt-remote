@@ -1,13 +1,13 @@
 package com.nocomake.serialremote.connection;
 
+import java.util.ArrayList;
+import java.util.function.Consumer;
+
 import android.content.Context;
 import android.widget.Toast;
 
 import com.nocomake.serialremote.connection.impls.BluetoothConnection;
 import com.nocomake.serialremote.connection.impls.TCPConnection;
-
-import java.util.ArrayList;
-import java.util.function.Consumer;
 
 public class ConnectionFactory {
     public static class RemoteDevice {

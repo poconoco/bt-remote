@@ -1,5 +1,15 @@
 package com.nocomake.serialremote;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
@@ -28,21 +38,10 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-
 import com.google.common.primitives.Booleans;
+
 import com.nocomake.serialremote.connection.Connection;
 import com.nocomake.serialremote.connection.ConnectionFactory;
-
 import com.nocomake.serialremote.protocol.Packet;
 import com.nocomake.serialremote.protocol.Protocol;
 import com.nocomake.serialremote.protocol.ProtocolFactory;
