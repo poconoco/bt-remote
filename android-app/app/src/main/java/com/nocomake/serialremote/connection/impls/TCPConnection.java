@@ -9,6 +9,7 @@ import java.net.SocketAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import io.reactivex.disposables.Disposable;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -22,7 +23,6 @@ import com.nocomake.serialremote.connection.Connection;
 import com.nocomake.serialremote.connection.ConnectionFactory;
 
 import DiyRemote.R;
-import io.reactivex.disposables.Disposable;
 
 public class TCPConnection implements Connection {
 
