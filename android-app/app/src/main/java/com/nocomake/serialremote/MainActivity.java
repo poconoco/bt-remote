@@ -289,6 +289,8 @@ public class MainActivity extends AppCompatActivity {
 
                     final Packet packet = new Packet();
 
+                    // Ensure packet accepts the same number of variables we have
+                    assert packet.axes.length == 4;
                     assert packet.switches.length == mSwitchesState.length + mButtonsState.length;
                     assert packet.sliders.length == mSliderPositions.length;
 
@@ -297,7 +299,8 @@ public class MainActivity extends AppCompatActivity {
                     System.arraycopy(
                             allSwitchesState, 0, packet.switches, 0, packet.switches.length);
 
-                    // Normalize sliders positions to signed with center i 0
+                    // Normalize sliders positions which are 0..255 to signed byte
+                    // which is -128..127 with center in 0
                     for (int i = 0; i < mSliderPositions.length; i++)
                         packet.sliders[i] = (byte)(mSliderPositions[i] - 128);
 
@@ -362,6 +365,9 @@ public class MainActivity extends AppCompatActivity {
 
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
+                    // When finger is up, user needs to grab the knob by start a tap
+                    // on it, not elsewhere in the joystick area
+
                     // Distance from tap to center should be less than knob radius
                     final float xDist = width / 2 - motionEvent.getX();
                     final float yDist = height / 2 - motionEvent.getY();
@@ -375,10 +381,6 @@ public class MainActivity extends AppCompatActivity {
 
                     int[] pos = new int[2];
                     view1.getLocationOnScreen(pos);
-
-                    // You need to tap into a knob to grab it, otherwise discard the tap down action
-                    if (action == MotionEvent.ACTION_DOWN) {
-                    }
 
                     final float x = (motionEvent.getX() - knobW / 2) / (width - knobW);
                     final float y = (motionEvent.getY() - knobH / 2) / (height - knobH);
@@ -473,16 +475,15 @@ public class MainActivity extends AppCompatActivity {
         mSliderPositions = new byte[sliders.size()];
 
         for (int i = 0; i < sliders.size(); i++) {
-            // 0..255 slider range needs to be shifted to signed byte range -128..127,
-            // hence the -128 when assigning to mSliderPositions
             final SeekBar slider = sliders.get(i);
             int i_ = i;
+
             // Reset initial position
             mSliderPositions[i_] = (byte)(slider.getProgress());
             slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar slider, int progress, boolean fromUser) {
-                    // Update when slider updates
+                    // Update position when slider moves
                     mSliderPositions[i_] = (byte)(progress);
                 }
 
