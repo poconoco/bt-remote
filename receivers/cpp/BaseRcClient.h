@@ -1,4 +1,3 @@
-#include <WiFi.h>
 
 class BaseRcClient {
     public: 
@@ -17,7 +16,11 @@ class BaseRcClient {
             memset(_axes, 0, sizeof(_axes));
             memset(_sliders, -128, sizeof(_sliders));  // Reset slider to minimum by default
             memset(_reserved, 0, sizeof(_reserved));            
-        };
+        }
+
+        ~BaseRcClient() {
+          delete _buffer;
+        }
 
         virtual void init() = 0; // Should init the RC stream
         virtual void send(String message) = 0;  // Send a message via the RC stream
