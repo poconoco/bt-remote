@@ -41,7 +41,7 @@ class Esp32TcpRcClient: BaseRcClient {
             return false;
         }
 
-        int8_t readByteAux() {
+        virtual int8_t readByteAux() {
             return _client.read();
         }
 
