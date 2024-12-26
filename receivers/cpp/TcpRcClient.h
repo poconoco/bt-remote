@@ -41,10 +41,10 @@ class TcpRcClient: public BaseRcClient {
             return false;
         }
 
-        int8_t readByteAux() {
+        virtual int8_t readByteAux() {
             if (!_client)
                 return 0;
-
+    
             return _client.read();
         }
 
