@@ -175,6 +175,7 @@ public class TCPConnection implements Connection {
         mSendHandler.post(() -> {
             try {
                 mOutputStream.write(packet);
+                mOutputStream.flush();
             } catch (IOException e) {
                 mMainHandler.post(() -> {
                     mConnected = false;

@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int BT_PERMISSION_REQUEST = 100;
     private static final String SELECTED_DEVICE_KEY = "SELECTED_DEVICE_KEY";
+    private static final String SELECTED_DEVICE_TYPE_KEY = "SELECTED_DEVICE_TYPE_KEY";
     private static final String SLIDER_KEY_PREFIX = "SLIDER_KEY_PREFIX_";
     private static final String SWITCH_KEY_PREFIX = "SWITCH_KEY_PREFIX_";
 
@@ -182,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
             editor.putBoolean(SWITCH_KEY_PREFIX+i++, switchCtl.isChecked());
 
         editor.putString(SELECTED_DEVICE_KEY, remoteDevice.address);
+        editor.putString(SELECTED_DEVICE_TYPE_KEY, remoteDevice.type.name());
 
         editor.apply();
     }
@@ -198,15 +200,20 @@ public class MainActivity extends AppCompatActivity {
         for (SwitchCompat switchCtl : getControlSwitches())
             switchCtl.setChecked(sharedPreferences.getBoolean(SWITCH_KEY_PREFIX+i++, false));
 
-        final String selectedDeviceAddress = sharedPreferences.getString(SELECTED_DEVICE_KEY, null);
-        if (selectedDeviceAddress == null)
-            return;
+        final String selectedDeviceType = sharedPreferences.getString(SELECTED_DEVICE_TYPE_KEY, null);
+        if (selectedDeviceType != null) {
+            final String selectedDeviceAddress = sharedPreferences.getString(SELECTED_DEVICE_KEY, null);
 
-        for (i = 0; i < mRemoteDevices.size(); i++) {
-            final ConnectionFactory.RemoteDevice device = mRemoteDevices.get(i);
-            if (device.address.equals(selectedDeviceAddress)) {
-                mDeviceSelection.setSelection(i);
-                break;
+            if (selectedDeviceAddress != null) {
+                for (i = 0; i < mRemoteDevices.size(); i++) {
+                    final ConnectionFactory.RemoteDevice device = mRemoteDevices.get(i);
+                    if ((device.type == ConnectionFactory.RemoteDevice.Type.TCP
+                            && device.type.name().equals(selectedDeviceType))
+                            || device.address.equals(selectedDeviceAddress)) {
+                        mDeviceSelection.setSelection(i);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -573,7 +580,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         resetConnectButton();
-        populateRemoteDevices();
     }
 
     private void onConnected() {
