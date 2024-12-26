@@ -2,9 +2,9 @@
 
 #include "BaseRcClient.h"
 
-class Esp32TcpRcClient: BaseRcClient {
+class TcpRcClient: public BaseRcClient {
     public: 
-        Esp32TcpRcClient(int port) 
+        TcpRcClient(int port) 
             : BaseRcClient()
             , _server(port) 
         {}
@@ -42,6 +42,9 @@ class Esp32TcpRcClient: BaseRcClient {
         }
 
         int8_t readByteAux() {
+            if (!_client)
+                return 0;
+
             return _client.read();
         }
 
