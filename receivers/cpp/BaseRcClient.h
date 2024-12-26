@@ -15,7 +15,7 @@ class BaseRcClient {
             _checksumErrorCount = 0;
             _switchesBitmask = 0;
             memset(_axes, 0, sizeof(_axes));
-            memset(_sliders, 0, sizeof(_sliders));
+            memset(_sliders, -128, sizeof(_sliders));  // Reset slider to minimum by default
             memset(_reserved, 0, sizeof(_reserved));            
         };
 
