@@ -34,6 +34,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -264,8 +265,6 @@ public class MainActivity extends AppCompatActivity {
         final boolean remoteStatsOnTop = sharedPreferences.getBoolean("remoteStatsOnTopVideo", true);
 
         setViewVisibility(R.id.remoteStats, remoteStatsOnTop || !mVideoStreamEnabled);
-        setViewVisibility(R.id.videoPlayerView, mVideoStreamEnabled && !mVideoStreamMJPG);
-        setViewVisibility(R.id.videoPlayerMJPEG, mVideoStreamEnabled && mVideoStreamMJPG);
         setViewVisibility(R.id.videoPlayerStatus, mVideoStreamEnabled);
 
         final int defaultSendPeriod = getResources().getInteger(R.integer.defaultSendPeriod);
@@ -642,6 +641,7 @@ public class MainActivity extends AppCompatActivity {
     private void connectViewStreamMjpeg() {
         final TextView status = findViewById(R.id.videoPlayerStatus);
         mMjpegPlayerView = findViewById(R.id.videoPlayerMJPEG);
+        mMjpegPlayerView.getSurfaceView().setVisibility(View.VISIBLE);
         final int timeout = 5;  // Seconds
 
         status.setText("Connecting...");
@@ -654,6 +654,8 @@ public class MainActivity extends AppCompatActivity {
                 },
                 error -> {
                     status.setText("Stream connection error: "+error);
+                    if (mMjpegPlayerView != null)
+                        mMjpegPlayerView.getSurfaceView().setVisibility(View.GONE);
                 });
     }
 
@@ -664,6 +666,7 @@ public class MainActivity extends AppCompatActivity {
         mExoPlayer = new ExoPlayer.Builder(this).build();
         mExoPlayerView = findViewById(R.id.videoPlayerView);
         mExoPlayerView.setPlayer(mExoPlayer);
+        mExoPlayerView.setVisibility(View.VISIBLE);
 
         // Hide UI buttons inside the player
         mExoPlayerView.setUseController(false);
@@ -688,6 +691,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPlayerError(PlaybackException error) {
+                mExoPlayerView.setVisibility(View.GONE);
                 status.setText("Stream connection error: "+error);
             }
         });
@@ -699,14 +703,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void disconnectVideoStream(Runnable completion) {
-        if (! mVideoStreamEnabled)
+        if (! mVideoStreamEnabled) {
+            completion.run();
             return;
+        }
 
         if (mExoPlayer != null) {
             mExoPlayer.stop();
             mExoPlayer.release();
             mExoPlayer = null;
             mExoPlayerView.setPlayer(null);
+            mExoPlayerView.setVisibility(View.GONE);
+            completion.run();
+            return;
         }
 
         final TextView status = findViewById(R.id.videoPlayerStatus);
@@ -714,12 +723,19 @@ public class MainActivity extends AppCompatActivity {
             status.setText("Disconnecting...");
             mBackgroundExecutor.execute(() -> {
                 if (mMjpegPlayerView != null) {
-                    mMjpegPlayerView.stopPlayback();
-                    mMjpegPlayerView.clearStream();
-                    mMjpegPlayerView = null;
+                    try {
+                        mMjpegPlayerView.stopPlayback();
+                        mMjpegPlayerView.clearStream();
+                    } catch (Exception e) {
+                        Log.e(TAG, "error stopping playback", e);
+                    }
                 }
 
                 runOnUiThread(() -> {
+                    if (mMjpegPlayerView != null) {
+                        mMjpegPlayerView.getSurfaceView().setVisibility(View.GONE);
+                        mMjpegPlayerView = null;
+                    }
                     status.setText("");
                     completion.run();
                 });
@@ -768,4 +784,6 @@ public class MainActivity extends AppCompatActivity {
     private PlayerView mExoPlayerView;
     private ExoPlayer mExoPlayer;
     ExecutorService mBackgroundExecutor;
+    private static final String TAG = MainActivity.class.getSimpleName();
+
 }
