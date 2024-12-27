@@ -89,6 +89,14 @@
             android:inputType="numberDecimal"
             android:digits="0123456789"
             app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="remoteStatsFontSize"
+            android:title="Remote stats font size"
+            android:defaultValue="@integer/defaultStatsFontSize"
+            android:maxLength="2"
+            android:inputType="numberDecimal"
+            android:digits="0123456789"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Video stream">
@@ -100,6 +108,11 @@
         <SwitchPreferenceCompat
             android:key="videoStreamIsMJPEG"
             android:title="MJPEG video stream"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="remoteStatsOnTopVideo"
+            android:title="Show remote stats on top of the video"
             app:defaultValue="true" />
 
         <EditTextPreference

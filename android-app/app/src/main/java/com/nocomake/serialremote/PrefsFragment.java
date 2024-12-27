@@ -16,8 +16,10 @@ public class PrefsFragment extends PreferenceFragmentCompat {
         // Load the preferences from an XML resource
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
-        setNumericValidator("sendPeriod", "Period", 20, 1000);
+        setNumericValidator("sendPeriod", "period", 20, 1000);
         setNumericValidator("ipPort", "IP port", 1, 65535);
+        setNumericValidator("remoteStatsFontSize", "font size", 12, 64);
+
         setStringValidator(
                 "ipAddress",
                 "IP address",
