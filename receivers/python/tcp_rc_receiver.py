@@ -24,8 +24,11 @@ class TcpRcReceiver:
     
     def send(self, message):
         if self.client_socket is not None:
-            message = message.replace('\n', '\t')+'\n'
-            self.client_socket.send(message.encode())
+            try:
+                message = message.replace('\n', '\t')+'\n'
+                self.client_socket.send(message.encode())
+            except ConnectionResetError as e:
+                self._close_connection()
 
     def is_connected(self):
         return self.client_socket is not None
@@ -88,23 +91,30 @@ class TcpRcReceiver:
         while True:  # Outer while, to accept reconnections
 
             # Accept only a single connection
-            self.client_socket, addr = self.server_socket.accept()
+            self.client_socket, self.remote_addr = self.server_socket.accept()
             self.connection_start = time.time()
             if self.print_debug:
-                print(f'Connection from {addr} established')
+                print(f'Connection from {self.remote_addr} established')
 
             while True:  # Inner while, to receive packets indefinitelly when connected
-                data = self.client_socket.recv(1024)
-                if not data:
-                    if self.print_debug:
-                        print(f'\nConnection from {addr} closed')
-                    self.client_socket.close()
-                    self.client_socket = None
+                try:
+                    data = self.client_socket.recv(1024)
+                    if not data:
+                        self._close_connection()
+                        break
+
+                    if not self._parse_packet(data):
+                        if self.print_debug:
+                            print(f'\nInvalid packet received: {data}')                
+                except ConnectionResetError as e:
+                    self._close_connection()
                     break
 
-                if not self._parse_packet(data):
-                    if self.print_debug:
-                        print(f'\nInvalid packet received: {data}')                
+    def _close_connection(self):
+        self.client_socket.close()
+        self.client_socket = None
+        if self.print_debug:
+            print(f'\nConnection from {self.remote_addr} closed')
 
     def _parse_packet(self, data):
         if len(data) < 15:
@@ -193,6 +203,6 @@ if __name__ == '__main__':
     while True:
         if rc.is_connected():
             print('\r'+rc_state_to_str(rc), end='', flush=True)
-            rc.send(f'Live for: {round(rc.get_connected_time())} s')
+            rc.send(f'Live for: {round(rc.get_connected_time())}s\n[next line]')
 
         time.sleep(0.1)
