@@ -106,7 +106,8 @@ public class TCPConnection implements Connection {
                 while ((message = reader.readLine()) != null) {
                     final String _message = message;
                     mMainHandler.post(() -> {
-                        mOnReceived.accept(_message);
+                        // Expect remote to encode all \n as \t, and convert back here
+                        mOnReceived.accept(_message.replace('\t', '\n'));
                     });
                 }
             } catch (Exception e) {

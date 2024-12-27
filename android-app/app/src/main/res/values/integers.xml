@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources>defaultStatsFontSize
     <integer name="defaultSendPeriod">100</integer>
+    <integer name="defaultStatsFontSize">32</integer>
     <integer name="defaultTcpPort">9876</integer>
 </resources>

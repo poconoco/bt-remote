@@ -34,6 +34,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
@@ -77,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 
         mBackgroundExecutor = Executors.newSingleThreadExecutor();
         mStatus = findViewById(R.id.status);
+        mRemoteStats = findViewById(R.id.remoteStats);
         mDeviceSelection = findViewById(R.id.btDevice);
         mProtocol = ProtocolFactory.createProtocol();
 
@@ -259,7 +261,9 @@ public class MainActivity extends AppCompatActivity {
         mVideoStreamEnabled = sharedPreferences.getBoolean("videoStreamEnabled", false)
                 && mVideoStreamURL != null && !mVideoStreamURL.isEmpty();
 
-        setViewVisibility(R.id.textTerminal, !mVideoStreamEnabled);
+        final boolean remoteStatsOnTop = sharedPreferences.getBoolean("remoteStatsOnTopVideo", true);
+
+        setViewVisibility(R.id.remoteStats, remoteStatsOnTop || !mVideoStreamEnabled);
         setViewVisibility(R.id.videoPlayerView, mVideoStreamEnabled && !mVideoStreamMJPG);
         setViewVisibility(R.id.videoPlayerMJPEG, mVideoStreamEnabled && mVideoStreamMJPG);
         setViewVisibility(R.id.videoPlayerStatus, mVideoStreamEnabled);
@@ -267,6 +271,12 @@ public class MainActivity extends AppCompatActivity {
         final int defaultSendPeriod = getResources().getInteger(R.integer.defaultSendPeriod);
         mSendPeriod = Integer.parseInt(sharedPreferences.getString(
                 "sendPeriod", Integer.toString(defaultSendPeriod)));
+
+        final int defaultStatsFontSize = getResources().getInteger(R.integer.defaultStatsFontSize);
+        final int statsFontSize = Integer.parseInt(sharedPreferences.getString(
+                "remoteStatsFontSize", Integer.toString(defaultStatsFontSize)));
+
+        mRemoteStats.setTextSize(TypedValue.COMPLEX_UNIT_SP, statsFontSize);
     }
 
     private void setViewText(int resourceId, String name, String defValue) {
@@ -288,6 +298,10 @@ public class MainActivity extends AppCompatActivity {
             Intent settingsIntent = new Intent(MainActivity.this, PrefsActivity.class);
             MainActivity.this.startActivity(settingsIntent);
         });
+    }
+
+    private void setRemoteStatus(String status) {
+        mRemoteStats.setText(status);
     }
 
     private void populateRemoteDevices() {
@@ -524,12 +538,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setTerminalText(String text) {
-        text = text.replace('\t', '\n');
-        final TextView receiveTerminal = findViewById(R.id.textTerminal);
-        receiveTerminal.setText(text);
-    }
-
     private void allowConnection(boolean allow, String buttonLabel) {
         final Button connectBtn = findViewById(R.id.connect);
         final Spinner spinner = findViewById(R.id.btDevice);
@@ -600,16 +608,16 @@ public class MainActivity extends AppCompatActivity {
             mStatus.setText(message);
         } else {
             mStatus.setText("Disconnected");
-            setTerminalText("");
         }
 
-        disconnectVideoStream();
+        setRemoteStatus("");
         resetConnectButton();
+        disconnectVideoStream();
     }
 
     private void onConnected() {
         mStatus.setText("Connected");
-        setTerminalText("");
+        setRemoteStatus("");
         resetConnectButton();
         scheduleSend();
     }
@@ -704,18 +712,16 @@ public class MainActivity extends AppCompatActivity {
                 mMjpegPlayerView.clearStream();
                 runOnUiThread(() -> {
                     status.setText("");
-                   // mMjpegPlayerView.resetTransparentBackground();
                     mMjpegPlayerView = null;
                 });
 
             });
         }
-
-        status.setText("");
     }
 
     private void onMessageReceived(String message) {
-        setTerminalText(message);
+        if (mSerialConnection != null && mSerialConnection.isConnected())
+            setRemoteStatus(message);
     }
 
     private void onConnectionError() {
@@ -728,6 +734,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private TextView mStatus;
+    private TextView mRemoteStats;
     private Spinner mDeviceSelection;
     final Set<View> grabbedPads = new HashSet<>();
 

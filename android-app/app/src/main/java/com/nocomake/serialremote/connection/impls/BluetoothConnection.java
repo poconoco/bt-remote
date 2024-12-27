@@ -123,7 +123,8 @@ public class BluetoothConnection implements Connection {
     }
 
     private void onMessageReceived(String message) {
-        mOnReceived.accept(message);
+        // Expect remote to encode all \n as \t
+        mOnReceived.accept(message.replace('\t', '\n'));
     }
 
     private void onError(Throwable error) {

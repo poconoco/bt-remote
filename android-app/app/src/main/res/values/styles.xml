@@ -8,4 +8,10 @@
         <item name="android:background">@color/black_overlay</item>
         <item name="android:buttonBarStyle">?android:attr/buttonBarStyle</item>
     </style>
+
+    <style name="OutlineText">
+        <item name="android:textColor">#eeeeee</item>
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowRadius">5</item>
+    </style>
 </resources>
