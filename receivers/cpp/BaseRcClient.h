@@ -23,7 +23,10 @@ class BaseRcClient {
         }
 
         virtual void init() = 0; // Should init the RC stream
-        virtual void send(String message) = 0;  // Send a message via the RC stream
+        void send(String message) {  // Send a message via the RC stream
+            message.replace('\n', '\t');
+            sendAux(message);
+        }
 
         // Must be called periodically, to not let the BT receiver buffer overflow
         void read() {
@@ -74,6 +77,7 @@ class BaseRcClient {
     protected:
         virtual boolean readAux() = 0;  // Returns true if a packet was received
         virtual int8_t readByteAux() = 0;  // Reads one byte from the RC stream
+        virtual void sendAux(String message) = 0;  // Send a message via the RC stream
 
         bool readAndProcessByte() {
             _buffer[_bp++] = readByteAux();

@@ -12,12 +12,6 @@ class TcpRcClient: public BaseRcClient {
         virtual void init() {
             _server.begin();
         }
-
-        virtual void send(String message) {
-            if (_client) {
-                _client.print(message);
-            }
-        }
     
     protected:
 
@@ -46,6 +40,12 @@ class TcpRcClient: public BaseRcClient {
                 return 0;
     
             return _client.read();
+        }
+
+        virtual void sendAux(String message) {
+            if (_client) {
+                _client.println(message);
+            }
         }
 
     private:
