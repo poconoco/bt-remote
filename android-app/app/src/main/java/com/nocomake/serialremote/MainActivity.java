@@ -382,13 +382,16 @@ public class MainActivity extends AppCompatActivity {
         if (mSerialConnection != null && mSerialConnection.isConnected()) {
             allowConnection(true, "Disconnect");
             mConnect.setOnClickListener(view -> disconnect(null));
+            allowSettings(false);
         } else {
             allowConnection(true, "Connect");
+            allowSettings(true);
             mConnect.setOnClickListener(view -> {
                 allowConnection(false, null);
                 connectVideoStream();
                 mStatus.setText("Connecting...");
                 mConnect.setEnabled(false);
+                allowSettings(false);
                 connect();
             });
         }
@@ -541,13 +544,16 @@ public class MainActivity extends AppCompatActivity {
     private void allowConnection(boolean allow, String buttonLabel) {
         final Button connectBtn = findViewById(R.id.connect);
         final Spinner spinner = findViewById(R.id.btDevice);
-        final ImageButton settingsBtn = findViewById(R.id.buttonSettings);
 
         if (buttonLabel != null)
             connectBtn.setText(buttonLabel);
         connectBtn.setEnabled(allow);
         spinner.setEnabled(allow);
-        settingsBtn.setEnabled(allow);
+    }
+
+    private void allowSettings(boolean allow) {
+        final ImageButton settingsButton = findViewById(R.id.buttonSettings);
+        settingsButton.setVisibility(allow ? View.VISIBLE : View.INVISIBLE);
     }
 
     private ConnectionFactory.RemoteDevice getSelectedRemote() {
@@ -645,7 +651,6 @@ public class MainActivity extends AppCompatActivity {
                     status.setText("");
                     mMjpegPlayerView.setSource(inputStream);
                     mMjpegPlayerView.setDisplayMode(DisplayMode.BEST_FIT);
-                   // mMjpegPlayerView.setTransparentBackground();
                 },
                 error -> {
                     status.setText("Stream connection error: "+error);
@@ -705,16 +710,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         final TextView status = findViewById(R.id.videoPlayerStatus);
-        status.setText("Disconnecting...");
         if (mMjpegPlayerView != null) {
+            status.setText("Disconnecting...");
             mBackgroundExecutor.execute(() -> {
                 mMjpegPlayerView.stopPlayback();
                 mMjpegPlayerView.clearStream();
-                runOnUiThread(() -> {
-                    status.setText("");
-                    mMjpegPlayerView = null;
-                });
-
+                status.setText("");
+                mMjpegPlayerView = null;
             });
         }
     }
