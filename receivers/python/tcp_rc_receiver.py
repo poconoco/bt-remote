@@ -24,7 +24,8 @@ class TcpRcReceiver:
     
     def send(self, message):
         if self.client_socket is not None:
-            self.client_socket.send(f'{message}\n'.encode())
+            message = message.replace('\n', '\t')+'\n'
+            self.client_socket.send(message.encode())
 
     def is_connected(self):
         return self.client_socket is not None
