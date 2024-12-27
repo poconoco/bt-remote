@@ -22,6 +22,11 @@ public class PrefsFragment extends PreferenceFragmentCompat {
                 "ipAddress",
                 "IP address",
                 Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$"));
+
+        setStringValidator(
+                "videoStreamURL",
+                "stream URL",
+                Pattern.compile("^(http|https|rtsp|rtmp)://(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)$"));
     }
 
     private void setNumericValidator(String prefName, String name, int min, int max) {
