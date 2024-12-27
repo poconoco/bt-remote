@@ -2,33 +2,31 @@
 
 #include "BaseRcClient.h"
 
-class TcpRcClient: public BaseRcClient {
+class Esp32TcpRcClient: public BaseRcClient {
     public: 
-        TcpRcClient(int port) 
+        Esp32TcpRcClient(int port) 
             : BaseRcClient()
             , _server(port) 
         {}
-
-        virtual void init() {
-            _server.begin();
-        }
     
     protected:
+        virtual void initAux() {
+            _server.begin();
+        }
 
-        virtual boolean readAux() {
+        virtual boolean tickAux() {
             if (!_client) {
                 _client = _server.available();
             }
 
             if (_client) {
                 if (_client.connected()) {
-                    while (_client.available()) {
+                    while (_client.connected() && _client.available()) {
                         if (readAndProcessByte())
                             return true;
                     }
                 } else {
                     _client.stop();
-                    _client = WiFiClient();
                 }
             }
 
