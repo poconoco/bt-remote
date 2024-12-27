@@ -554,6 +554,7 @@ public class MainActivity extends AppCompatActivity {
     private void allowSettings(boolean allow) {
         final ImageButton settingsButton = findViewById(R.id.buttonSettings);
         settingsButton.setVisibility(allow ? View.VISIBLE : View.INVISIBLE);
+        mDeviceSelection.setEnabled(allow);
     }
 
     private ConnectionFactory.RemoteDevice getSelectedRemote() {
