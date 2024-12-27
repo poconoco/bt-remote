@@ -7,12 +7,13 @@ import _thread  # Use low level _thread instead of threading to support Micro Py
 class TcpRcReceiver:
     def __init__(self, bind_ip='0.0.0.0', port=9876, print_debug=False):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket = None
         self.switches = [False, False, False, False, False, False, False, False]
         self.axes = [0, 0, 0, 0]
         self.sliders = [0, 0]
         self.reserved = [0, 0, 0, 0]
         self.print_debug = print_debug
-        self.connected = False
+        self.connection_start = 0
 
         self.server_socket.bind((bind_ip, port))
         self.server_socket.listen()
@@ -21,8 +22,12 @@ class TcpRcReceiver:
 
         _thread.start_new_thread(self._start_server, ())
     
+    def send(self, message):
+        if self.client_socket is not None:
+            self.client_socket.send(f'{message}\n'.encode())
+
     def is_connected(self):
-        return self.connected
+        return self.client_socket is not None
 
     def get_switch_a(self):
         return self.switches[0]
@@ -71,23 +76,29 @@ class TcpRcReceiver:
             return None
         else:
             return self.reserved[i]
+        
+    def get_connected_time(self):
+        if self.client_socket is None:
+            return None
+        else:
+            return time.time() - self.connection_start
 
     def _start_server(self):
         while True:  # Outer while, to accept reconnections
 
             # Accept only a single connection
-            client_socket, addr = self.server_socket.accept()
-            self.connected = True
+            self.client_socket, addr = self.server_socket.accept()
+            self.connection_start = time.time()
             if self.print_debug:
                 print(f'Connection from {addr} established')
 
             while True:  # Inner while, to receive packets indefinitelly when connected
-                data = client_socket.recv(1024)
+                data = self.client_socket.recv(1024)
                 if not data:
-                    self.connected = False
                     if self.print_debug:
                         print(f'\nConnection from {addr} closed')
-                    client_socket.close()
+                    self.client_socket.close()
+                    self.client_socket = None
                     break
 
                 if not self._parse_packet(data):
@@ -181,4 +192,6 @@ if __name__ == '__main__':
     while True:
         if rc.is_connected():
             print('\r'+rc_state_to_str(rc), end='', flush=True)
+            rc.send(f'Live for: {round(rc.get_connected_time())} s')
+
         time.sleep(0.1)
