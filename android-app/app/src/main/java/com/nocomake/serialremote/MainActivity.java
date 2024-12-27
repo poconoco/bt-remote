@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
@@ -13,6 +15,11 @@ import io.reactivex.disposables.Disposable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 import androidx.preference.PreferenceManager;
 
 import android.Manifest;
@@ -38,6 +45,10 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import com.github.niqdev.mjpeg.DisplayMode;
+import com.github.niqdev.mjpeg.Mjpeg;
+import com.github.niqdev.mjpeg.MjpegView;
 import com.google.common.primitives.Booleans;
 
 import com.nocomake.serialremote.connection.Connection;
@@ -59,12 +70,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         getSupportActionBar().hide();
-
         setContentView(R.layout.main_activity);
-
         fixFullscreen();
 
+        mBackgroundExecutor = Executors.newSingleThreadExecutor();
         mStatus = findViewById(R.id.status);
         mDeviceSelection = findViewById(R.id.btDevice);
         mProtocol = ProtocolFactory.createProtocol();
@@ -243,6 +254,16 @@ public class MainActivity extends AppCompatActivity {
         setViewVisibility(R.id.leftKnob, sharedPreferences.getBoolean("showJoyL", true));
         setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
 
+        mVideoStreamURL = sharedPreferences.getString("videoStreamURL", null);
+        mVideoStreamMJPG = sharedPreferences.getBoolean("videoStreamIsMJPEG", true);
+        mVideoStreamEnabled = sharedPreferences.getBoolean("videoStreamEnabled", false)
+                && mVideoStreamURL != null && !mVideoStreamURL.isEmpty();
+
+        setViewVisibility(R.id.textTerminal, !mVideoStreamEnabled);
+        setViewVisibility(R.id.videoPlayerView, mVideoStreamEnabled && !mVideoStreamMJPG);
+        setViewVisibility(R.id.videoPlayerMJPEG, mVideoStreamEnabled && mVideoStreamMJPG);
+        setViewVisibility(R.id.videoPlayerStatus, mVideoStreamEnabled);
+
         final int defaultSendPeriod = getResources().getInteger(R.integer.defaultSendPeriod);
         mSendPeriod = Integer.parseInt(sharedPreferences.getString(
                 "sendPeriod", Integer.toString(defaultSendPeriod)));
@@ -351,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
             allowConnection(true, "Connect");
             mConnect.setOnClickListener(view -> {
                 allowConnection(false, null);
+                connectVideoStream();
                 mStatus.setText("Connecting...");
                 mConnect.setEnabled(false);
                 connect();
@@ -511,11 +533,13 @@ public class MainActivity extends AppCompatActivity {
     private void allowConnection(boolean allow, String buttonLabel) {
         final Button connectBtn = findViewById(R.id.connect);
         final Spinner spinner = findViewById(R.id.btDevice);
+        final ImageButton settingsBtn = findViewById(R.id.buttonSettings);
 
         if (buttonLabel != null)
             connectBtn.setText(buttonLabel);
         connectBtn.setEnabled(allow);
         spinner.setEnabled(allow);
+        settingsBtn.setEnabled(allow);
     }
 
     private ConnectionFactory.RemoteDevice getSelectedRemote() {
@@ -579,6 +603,7 @@ public class MainActivity extends AppCompatActivity {
             setTerminalText("");
         }
 
+        disconnectVideoStream();
         resetConnectButton();
     }
 
@@ -587,6 +612,106 @@ public class MainActivity extends AppCompatActivity {
         setTerminalText("");
         resetConnectButton();
         scheduleSend();
+    }
+
+    private void connectVideoStream() {
+        if (! mVideoStreamEnabled)
+            return;
+
+        if (mVideoStreamMJPG)
+            connectViewStreamMjpeg();
+        else
+            connectVideoStreamExoPlayer();
+
+    }
+
+    private void connectViewStreamMjpeg() {
+        final TextView status = findViewById(R.id.videoPlayerStatus);
+        mMjpegPlayerView = findViewById(R.id.videoPlayerMJPEG);
+        final int timeout = 5;  // Seconds
+
+        status.setText("Connecting...");
+        Mjpeg.newInstance()
+                .open(mVideoStreamURL, timeout)
+                .subscribe(inputStream -> {
+                    status.setText("");
+                    mMjpegPlayerView.setSource(inputStream);
+                    mMjpegPlayerView.setDisplayMode(DisplayMode.BEST_FIT);
+                   // mMjpegPlayerView.setTransparentBackground();
+                },
+                error -> {
+                    status.setText("Stream connection error: "+error);
+                });
+    }
+
+    private void connectVideoStreamExoPlayer() {
+        final TextView status = findViewById(R.id.videoPlayerStatus);
+        status.setText("Connecting...");
+
+        mExoPlayer = new ExoPlayer.Builder(this).build();
+        mExoPlayerView = findViewById(R.id.videoPlayerView);
+        mExoPlayerView.setPlayer(mExoPlayer);
+
+        // Hide UI buttons inside the player
+        mExoPlayerView.setUseController(false);
+
+        mExoPlayer.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int playbackState) {
+                switch (playbackState) {
+                    case Player.STATE_READY:
+                        status.setText("");
+                        break;
+                    case Player.STATE_BUFFERING:
+                        status.setText("Buffering...");
+                        break;
+                    case Player.STATE_ENDED:
+                        status.setText("Stream ended");
+                        break;
+                    case Player.STATE_IDLE:
+                        break;
+                }
+            }
+
+            @Override
+            public void onPlayerError(PlaybackException error) {
+                status.setText("Stream connection error: "+error);
+            }
+        });
+
+        MediaItem mediaItem = MediaItem.fromUri(mVideoStreamURL);
+        mExoPlayer.setMediaItem(mediaItem);
+        mExoPlayer.prepare();
+        mExoPlayer.play();
+    }
+
+    private void disconnectVideoStream() {
+        if (! mVideoStreamEnabled)
+            return;
+
+        if (mExoPlayer != null) {
+            mExoPlayer.stop();
+            mExoPlayer.release();
+            mExoPlayer = null;
+            mExoPlayerView.setPlayer(null);
+        }
+
+        final TextView status = findViewById(R.id.videoPlayerStatus);
+        status.setText("Disconnecting...");
+        if (mMjpegPlayerView != null) {
+            mBackgroundExecutor.execute(() -> {
+                mMjpegPlayerView.stopPlayback();
+                mMjpegPlayerView.clearStream();
+                runOnUiThread(() -> {
+                    status.setText("");
+                   // mMjpegPlayerView.resetTransparentBackground();
+                    mMjpegPlayerView = null;
+                });
+
+            });
+        }
+
+        status.setText("");
     }
 
     private void onMessageReceived(String message) {
@@ -619,5 +744,13 @@ public class MainActivity extends AppCompatActivity {
     private final CompositeDisposable mCompositeDisposable = new CompositeDisposable();
 
     private Connection mSerialConnection;
-    Protocol mProtocol;
+    private Protocol mProtocol;
+
+    private boolean mVideoStreamEnabled;
+    private boolean mVideoStreamMJPG;
+    private String mVideoStreamURL;
+    MjpegView mMjpegPlayerView;
+    private PlayerView mExoPlayerView;
+    private ExoPlayer mExoPlayer;
+    ExecutorService mBackgroundExecutor;
 }

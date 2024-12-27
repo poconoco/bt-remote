@@ -2,7 +2,7 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory android:title="TCP connection">
+    <PreferenceCategory android:title="TCP RC connection">
         <EditTextPreference
             android:key="ipAddress"
             android:title="IP address"
@@ -19,25 +19,25 @@
     </PreferenceCategory>
 
     <PreferenceCategory android:title="Show controls">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:key="showJoyL"
             android:title="Show left joystick"
             app:defaultValue="true" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:key="showJoyR"
             android:title="Show right joystick"
             app:defaultValue="true" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:key="showSliderL"
             android:title="Show left slider"
             app:defaultValue="true" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:key="showSliderR"
             android:title="Show right slider"
             app:defaultValue="true" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Switch names (empty for default)">
+    <PreferenceCategory android:title="Control names (empty for default)">
         <EditTextPreference
             android:key="switchA"
             android:title="Switch A"
@@ -54,9 +54,6 @@
             android:key="switchD"
             android:title="Switch D"
             app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="Button names (empty for default)">
         <EditTextPreference
             android:key="buttonE"
             android:title="Button E"
@@ -73,9 +70,6 @@
             android:key="buttonH"
             android:title="Button H"
             app:useSimpleSummaryProvider="true" />
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="Slider names (empty for default)">
         <EditTextPreference
             android:key="sliderR"
             android:title="Right slider"
@@ -94,6 +88,23 @@
             android:maxLength="4"
             android:inputType="numberDecimal"
             android:digits="0123456789"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Video stream">
+        <SwitchPreferenceCompat
+            android:key="videoStreamEnabled"
+            android:title="Enable video stream"
+            app:defaultValue="false" />
+
+        <SwitchPreferenceCompat
+            android:key="videoStreamIsMJPEG"
+            android:title="MJPEG video stream"
+            app:defaultValue="true" />
+
+        <EditTextPreference
+            android:key="videoStreamURL"
+            android:title="Video stream URL"
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
