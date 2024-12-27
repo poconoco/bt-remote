@@ -618,8 +618,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setRemoteStatus("");
-        resetConnectButton();
-        disconnectVideoStream();
+        disconnectVideoStream(this::resetConnectButton);
     }
 
     private void onConnected() {
@@ -699,7 +698,7 @@ public class MainActivity extends AppCompatActivity {
         mExoPlayer.play();
     }
 
-    private void disconnectVideoStream() {
+    private void disconnectVideoStream(Runnable completion) {
         if (! mVideoStreamEnabled)
             return;
 
@@ -714,10 +713,16 @@ public class MainActivity extends AppCompatActivity {
         if (mMjpegPlayerView != null) {
             status.setText("Disconnecting...");
             mBackgroundExecutor.execute(() -> {
-                mMjpegPlayerView.stopPlayback();
-                mMjpegPlayerView.clearStream();
-                status.setText("");
-                mMjpegPlayerView = null;
+                if (mMjpegPlayerView != null) {
+                    mMjpegPlayerView.stopPlayback();
+                    mMjpegPlayerView.clearStream();
+                    mMjpegPlayerView = null;
+                }
+
+                runOnUiThread(() -> {
+                    status.setText("");
+                    completion.run();
+                });
             });
         }
     }
