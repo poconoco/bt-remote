@@ -6,6 +6,7 @@ import _thread  # Use low level _thread instead of threading to support Micro Py
 
 class TcpRcReceiver:
     def __init__(self, bind_ip='0.0.0.0', port=9876, print_debug=False):
+        self.port = port
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket = None
         self.switches = [False, False, False, False, False, False, False, False]
@@ -21,7 +22,7 @@ class TcpRcReceiver:
             print(f'Waiting for connections on {bind_ip}:{port}...')
 
         _thread.start_new_thread(self._start_server, ())
-    
+
     def send(self, message):
         if self.client_socket is not None:
             try:
@@ -30,57 +31,60 @@ class TcpRcReceiver:
             except ConnectionResetError as e:
                 self._close_connection()
 
+    def get_port(self):
+        return self.port
+
     def is_connected(self):
         return self.client_socket is not None
 
     def get_switch_a(self):
         return self.switches[0]
-    
+
     def get_switch_b(self):
         return self.switches[1]
 
     def get_switch_c(self):
         return self.switches[2]
-    
+
     def get_switch_d(self):
         return self.switches[3]
 
     def get_switch_e(self):
         return self.switches[4]
-    
+
     def get_switch_f(self):
         return self.switches[5]
 
     def get_switch_g(self):
         return self.switches[6]
-    
+
     def get_switch_h(self):
         return self.switches[7]
-    
+
     def get_x1(self):
         return self.axes[0]
-    
+
     def get_y1(self):
         return self.axes[1]
-    
+
     def get_x2(self):
         return self.axes[2]
-    
+
     def get_y2(self):
         return self.axes[3]
 
     def get_slider_left(self):
         return self.sliders[0]
-    
+
     def get_slider_right(self):
         return self.sliders[1]
-    
+
     def get_reserved(self, i):
         if i not in range(0, len(self.reserved)):
             return None
         else:
             return self.reserved[i]
-        
+
     def get_connected_time(self):
         if self.client_socket is None:
             return None
@@ -105,7 +109,7 @@ class TcpRcReceiver:
 
                     if not self._parse_packet(data):
                         if self.print_debug:
-                            print(f'\nInvalid packet received: {data}')                
+                            print(f'\nInvalid packet received: {data}')
                 except ConnectionResetError as e:
                     self._close_connection()
                     break
@@ -121,7 +125,7 @@ class TcpRcReceiver:
             if self.print_debug:
                 print(f'Invalid len: {len(data)}')
             return False
-        
+
         # Sometime we get two packets at once, so we keep only the last one
         if len(data) > 15:
             data = data[-15:]

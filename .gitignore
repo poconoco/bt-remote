@@ -1,3 +1,9 @@
+# Python venv
+.venv
+
+# Python cache
+__pycache__
+
 # Prerequisites
 *.d
 
