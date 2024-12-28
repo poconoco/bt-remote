@@ -15,7 +15,8 @@ template<class SerialT> class BtRcReceiver: public BaseRcClient {
         _serial->end();		
     }
 
-    virtual void init() {
+  protected:
+    virtual void initAux() {
       if (_inited)
         return;
 
@@ -42,18 +43,10 @@ template<class SerialT> class BtRcReceiver: public BaseRcClient {
       _serial->println("AT+PSWD"+_pinCode);
       delay(100);
 
-      _inited = true;
+      _inited = true;      
     }
 
-    virtual void send(String message) {
-      if (! _inited)
-        return;
-
-      _serial->println(message);
-    }
-
-  protected:
-    virtual boolean readAux() {
+    virtual boolean tickAux() {
       if (! _inited) {
         return false;
       }
@@ -61,11 +54,20 @@ template<class SerialT> class BtRcReceiver: public BaseRcClient {
       while (_serial->available() > 0) {
         if (readAndProcessByte())
           return true;
-      }  
+      }
+
+      return false;
     }
 
     virtual int8_t readByteAux() {
       return _serial->read();
+    }
+
+    virtual void sendAux(String message) {
+      if (! _inited)
+        return;
+
+      _serial->println(message);
     }
 
   private:    
