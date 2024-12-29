@@ -47,6 +47,7 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.niqdev.mjpeg.DisplayMode;
 import com.github.niqdev.mjpeg.Mjpeg;
@@ -108,31 +109,6 @@ public class MainActivity extends AppCompatActivity {
         attachSliders();
 
         initSettingsButton();
-        applyConfigurablePreferences();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                         != PackageManager.PERMISSION_GRANTED ||
-                 ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
-                         != PackageManager.PERMISSION_GRANTED)) {
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{
-                            Manifest.permission.BLUETOOTH_CONNECT,
-                            Manifest.permission.BLUETOOTH_SCAN},
-                    BT_PERMISSION_REQUEST);
-        } else {
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{Manifest.permission.BLUETOOTH},
-                        BT_PERMISSION_REQUEST);
-            } else {
-                populateRemoteDevices();
-            }
-        }
     }
 
     @Override
@@ -149,10 +125,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (mSerialConnection == null ||
                 (! mSerialConnection.isConnected() && ! mSerialConnection.isConnecting())) {
-            populateRemoteDevices();
+            checkPermissionsAndPopulateRemoteDevices();
         }
-
-        loadState();
     }
 
     @Override
@@ -162,24 +136,51 @@ public class MainActivity extends AppCompatActivity {
             int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == BT_PERMISSION_REQUEST) {
-            boolean noPermission = false;
-            if (grantResults.length == 0)
-                noPermission = true;
-
-            if (!noPermission) {
-                for (int grantResult : grantResults) {
-                    if (grantResult != PackageManager.PERMISSION_GRANTED)
-                        noPermission = true;
-                }
+            mNoPermission = false;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED)
+                    mNoPermission = true;
             }
 
-            if (noPermission) {
-                mStatus.setText("Check BT permission");
-                allowConnection(false, "--");
-                allowSettings(false);
-                return;
-            }
+            if (mNoPermission)
+                showNoBtPermissionToast();
 
+            populateRemoteDevices();
+        }
+    }
+
+    private void showNoBtPermissionToast() {
+        Toast.makeText(
+                this,
+                "Bluetooth permission denied, BT connections disabled",
+                Toast.LENGTH_LONG).show();
+    }
+
+    private void checkPermissionsAndPopulateRemoteDevices() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                        != PackageManager.PERMISSION_GRANTED ||
+                        ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
+                                != PackageManager.PERMISSION_GRANTED)) {
+
+            boolean showRationale =
+                    ActivityCompat.shouldShowRequestPermissionRationale(
+                            this, Manifest.permission.BLUETOOTH_CONNECT);
+
+            if (!showRationale) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{
+                                Manifest.permission.BLUETOOTH_CONNECT,
+                                Manifest.permission.BLUETOOTH_SCAN},
+                        BT_PERMISSION_REQUEST);
+            } else {
+                mNoPermission = true;
+                showNoBtPermissionToast();
+                populateRemoteDevices();
+            }
+        } else {
+            mNoPermission = false;
             populateRemoteDevices();
         }
     }
@@ -325,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void populateRemoteDevices() {
-        mRemoteDevices = ConnectionFactory.getRemoteDevices(this);
+        mRemoteDevices = ConnectionFactory.getRemoteDevices(this, mNoPermission);
         final List<String> names = Arrays.asList(mRemoteDevices
                 .stream()
                 .map(remoteDevice -> remoteDevice.name)
@@ -339,6 +340,8 @@ public class MainActivity extends AppCompatActivity {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mDeviceSelection.setAdapter(spinnerAdapter);
 
+        // We can load state only after populating the remote devices
+        loadState();
         resetConnectButton();
     }
 
@@ -778,6 +781,7 @@ public class MainActivity extends AppCompatActivity {
         return Math.max(min, Math.min(max, val));
     }
 
+    private boolean mNoPermission;
     private TextView mStatus;
     private TextView mRemoteStats;
     private Spinner mDeviceSelection;

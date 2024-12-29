@@ -27,16 +27,12 @@ public class ConnectionFactory {
         final public Type type;
     }
 
-    public static ArrayList<RemoteDevice> getRemoteDevices(Context context) {
-        final ArrayList<RemoteDevice> tcpDevices =
+    public static ArrayList<RemoteDevice> getRemoteDevices(Context context, boolean skipBluetooth) {
+        final ArrayList<RemoteDevice> result =
                 TCPConnection.getRemoteDevices(context);
 
-        final ArrayList<RemoteDevice> bluetoothDevices =
-                BluetoothConnection.getRemoteDevices(context);
-
-        final ArrayList<RemoteDevice> result = new ArrayList<>();
-        result.addAll(tcpDevices);
-        result.addAll(bluetoothDevices);
+        if (! skipBluetooth)
+            result.addAll(BluetoothConnection.getRemoteDevices(context));
 
         return result;
     }
