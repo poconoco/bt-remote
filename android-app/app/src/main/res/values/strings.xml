@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">DIY RC</string>
     <string name="defaultTcpAddress">192.168.1.100</string>
+    <string name="defaultVideoStreamURL">http://192.168.1.100:81</string>
 </resources>

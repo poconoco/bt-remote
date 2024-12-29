@@ -118,6 +118,7 @@
         <EditTextPreference
             android:key="videoStreamURL"
             android:title="Video stream URL"
+            android:defaultValue="@string/defaultVideoStreamURL"
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
