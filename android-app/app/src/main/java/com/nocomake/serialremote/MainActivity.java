@@ -123,7 +123,15 @@ public class MainActivity extends AppCompatActivity {
                             Manifest.permission.BLUETOOTH_SCAN},
                     BT_PERMISSION_REQUEST);
         } else {
-            populateRemoteDevices();
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.BLUETOOTH},
+                        BT_PERMISSION_REQUEST);
+            } else {
+                populateRemoteDevices();
+            }
         }
     }
 
@@ -154,13 +162,25 @@ public class MainActivity extends AppCompatActivity {
             int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == BT_PERMISSION_REQUEST) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                populateRemoteDevices();
-            } else {
-                mStatus.setText("Check BT permission");
+            boolean noPermission = false;
+            if (grantResults.length == 0)
+                noPermission = true;
+
+            if (!noPermission) {
+                for (int grantResult : grantResults) {
+                    if (grantResult != PackageManager.PERMISSION_GRANTED)
+                        noPermission = true;
+                }
             }
+
+            if (noPermission) {
+                mStatus.setText("Check BT permission");
+                allowConnection(false, "--");
+                allowSettings(false);
+                return;
+            }
+
+            populateRemoteDevices();
         }
     }
 
@@ -257,7 +277,8 @@ public class MainActivity extends AppCompatActivity {
         setViewVisibility(R.id.leftKnob, sharedPreferences.getBoolean("showJoyL", true));
         setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
 
-        mVideoStreamURL = sharedPreferences.getString("videoStreamURL", null);
+        final String defaultStreamURL = getResources().getString(R.string.defaultVideoStreamURL);
+        mVideoStreamURL = sharedPreferences.getString("videoStreamURL", defaultStreamURL);
         mVideoStreamMJPG = sharedPreferences.getBoolean("videoStreamIsMJPEG", true);
         mVideoStreamEnabled = sharedPreferences.getBoolean("videoStreamEnabled", false)
                 && mVideoStreamURL != null && !mVideoStreamURL.isEmpty();
