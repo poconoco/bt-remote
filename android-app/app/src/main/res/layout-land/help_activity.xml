@@ -13,39 +13,37 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:padding="20dp">
 
         <ImageView
             android:id="@+id/helpImage"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="10dp"
-            android:layout_marginBottom="20dp"
+            android:layout_marginEnd="75dp"
             android:contentDescription="Connection options"
             android:scaleType="fitEnd"
             android:src="@drawable/help_land"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/buttonToGithub"
+            app:layout_constraintDimensionRatio="3744:2056"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
 
         <ImageButton
             android:id="@+id/buttonToGithub"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginEnd="20dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_marginStart="15dp"
+            android:background="@drawable/button_background"
             android:backgroundTint="@color/primary_1"
-            android:backgroundTintMode="src_over"
             android:contentDescription="GitHub receivers code link"
+            android:padding="6dp"
             android:scaleType="fitXY"
             android:src="@drawable/github_inv"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
+            app:layout_constraintStart_toEndOf="@+id/helpImage"
+            app:layout_constraintTop_toTopOf="@+id/helpImage" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
