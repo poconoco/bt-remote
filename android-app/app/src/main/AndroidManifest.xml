@@ -25,9 +25,14 @@
             </intent-filter>
         </activity>
         <activity
-            android:exported="true"
+            android:exported="false"
             android:name="com.nocomake.serialremote.PrefsActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
+            >
+        </activity>
+        <activity
+            android:exported="false"
+            android:name="com.nocomake.serialremote.HelpActivity"
             >
         </activity>
     </application>

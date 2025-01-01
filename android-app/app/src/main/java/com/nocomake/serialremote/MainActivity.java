@@ -12,7 +12,6 @@ import java.util.concurrent.Executors;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.media3.common.MediaItem;
@@ -27,10 +26,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PointF;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -62,7 +59,7 @@ import com.nocomake.serialremote.protocol.ProtocolFactory;
 
 import DiyRemote.R;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends FullscreenActivityBase {
 
     private static final int BT_PERMISSION_REQUEST = 100;
     private static final String SELECTED_DEVICE_KEY = "SELECTED_DEVICE_KEY";
@@ -74,9 +71,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getSupportActionBar().hide();
         setContentView(R.layout.main_activity);
-        fixFullscreen();
 
         mBackgroundExecutor = Executors.newSingleThreadExecutor();
         mStatus = findViewById(R.id.status);
@@ -108,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         attachControlButtons();
         attachSliders();
 
-        initSettingsButton();
+        initAuxButtons();
     }
 
     @Override
@@ -183,21 +178,6 @@ public class MainActivity extends AppCompatActivity {
             mNoPermission = false;
             populateRemoteDevices();
         }
-    }
-
-    private void fixFullscreen() {
-        // Try to fill the space under the camera cutout to the same color we use for
-        // background
-        final Bitmap bitmap = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(getResources().getColor(R.color.background, null));
-        final BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
-        getWindow().setBackgroundDrawable(bitmapDrawable);
-
-        // An attempt to remove the black bar at the bottom with close swipe handle,
-        // but also affects status bar, so disable for now, to reconsider later
-
-        // getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-        //                      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
     }
 
     private void saveState() {
@@ -313,12 +293,19 @@ public class MainActivity extends AppCompatActivity {
         view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-    private void initSettingsButton() {
+    private void initAuxButtons() {
         final ImageButton settingsButton = findViewById(R.id.buttonSettings);
         settingsButton.setOnClickListener(v -> {
             Intent settingsIntent = new Intent(MainActivity.this, PrefsActivity.class);
             MainActivity.this.startActivity(settingsIntent);
         });
+
+        final ImageButton helpButton = findViewById(R.id.buttonHelp);
+        helpButton.setOnClickListener(v -> {
+            Intent helpIntent = new Intent(MainActivity.this, HelpActivity.class);
+            MainActivity.this.startActivity(helpIntent);
+        });
+
     }
 
     private void setRemoteStatus(String status) {
