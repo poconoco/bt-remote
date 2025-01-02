@@ -12,7 +12,7 @@ android-app/captures
 .externalNativeBuild
 .cxx
 local.properties
-
+android-app/app/release
 
 # Python cache
 __pycache__
