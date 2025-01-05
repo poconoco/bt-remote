@@ -4,7 +4,7 @@
 
 class Esp32TcpRcClient: public BaseRcClient {
     public: 
-        Esp32TcpRcClient(int port) 
+        Esp32TcpRcClient(int port=9876)
             : BaseRcClient()
             , _server(port) 
         {}
