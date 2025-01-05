@@ -596,8 +596,6 @@ public class MainActivity extends FullscreenActivityBase {
 
         mSerialConnection = ConnectionFactory.createConnection(
                 selectedDevice,
-                this::onMessageReceived,
-                this::onConnectionError,
                 this);
 
         if (mSerialConnection == null) {
@@ -605,7 +603,8 @@ public class MainActivity extends FullscreenActivityBase {
             return;
         }
 
-        final Disposable d = mSerialConnection.connect(this::onConnected);
+        mSerialConnection.setOnReceivedListener(this::onMessageReceived);
+        final Disposable d = mSerialConnection.connect(this::onConnected, this::onConnectionError);
         if (d != null)
             mCompositeDisposable.add(d);
     }

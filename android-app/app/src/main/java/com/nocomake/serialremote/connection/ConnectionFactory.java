@@ -39,14 +39,12 @@ public class ConnectionFactory {
 
     public static Connection createConnection(
             RemoteDevice remoteDevice,
-            Consumer<String> onReceived,
-            Runnable onError,
             Context context) {
         switch (remoteDevice.type) {
             case BT:
-                return new BluetoothConnection(remoteDevice, onReceived, onError, context);
+                return new BluetoothConnection(remoteDevice, context);
             case TCP:
-                return new TCPConnection(remoteDevice, onReceived, onError, context);
+                return new TCPConnection(remoteDevice, context);
             default:
                 Toast.makeText(
                         context,
