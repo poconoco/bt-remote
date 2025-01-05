@@ -52,14 +52,10 @@ public class BluetoothConnection implements Connection {
 
     public BluetoothConnection(
             ConnectionFactory.RemoteDevice remoteDevice,
-            Consumer<String> onReceived,
-            Runnable onError,
             Context context) {
         mConnected = false;
         mConnecting = false;
         mRemoteDevice = remoteDevice;
-        mOnReceived = onReceived;
-        mOnError = onError;
         mBluetoothManager = BluetoothManager.getInstance();
         if (mBluetoothManager == null) {
             Toast.makeText(context, "Bluetooth not available", Toast.LENGTH_LONG).show();
@@ -68,9 +64,10 @@ public class BluetoothConnection implements Connection {
     }
 
     @Override
-    public Disposable connect(Runnable onConnected) {
+    public Disposable connect(Runnable onConnected, Runnable onError) {
         mConnecting = true;
         mOnConnected = onConnected;
+        mOnError = onError;
         return mBluetoothManager.openSerialDevice(mRemoteDevice.address)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -93,6 +90,11 @@ public class BluetoothConnection implements Connection {
             return;
 
         mDeviceInterface.sendBytes(packet);
+    }
+
+    @Override
+    public void setOnReceivedListener(Consumer<String> onReceived) {
+        mOnReceived = onReceived;
     }
 
     @Override
@@ -124,12 +126,14 @@ public class BluetoothConnection implements Connection {
 
     private void onMessageReceived(String message) {
         // Expect remote to encode all \n as \t
-        mOnReceived.accept(message.replace('\t', '\n'));
+        if (mOnReceived != null)
+            mOnReceived.accept(message.replace('\t', '\n'));
     }
 
     private void onError(Throwable error) {
         mConnecting = false;
-        mOnError.run();
+        if (mOnError != null)
+            mOnError.run();
     }
 
     private final BluetoothManager mBluetoothManager;
@@ -138,7 +142,7 @@ public class BluetoothConnection implements Connection {
     private boolean mConnected;
     private boolean mConnecting;
     private Runnable mOnConnected;
-    private final Runnable mOnError;
-    private final Consumer<String> mOnReceived;
+    private Runnable mOnError;
+    private Consumer<String> mOnReceived;
 
 }
