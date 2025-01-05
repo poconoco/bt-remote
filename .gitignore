@@ -1,6 +1,19 @@
 # Python venv
 .venv
 
+# Android Studio, gradle
+*.iml
+.gradle
+local.properties
+.idea
+.DS_Store
+android-app/build
+android-app/captures
+.externalNativeBuild
+.cxx
+local.properties
+android-app/app/release
+
 # Python cache
 __pycache__
 

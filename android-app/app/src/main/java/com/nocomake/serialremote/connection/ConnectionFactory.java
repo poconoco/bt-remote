@@ -27,30 +27,24 @@ public class ConnectionFactory {
         final public Type type;
     }
 
-    public static ArrayList<RemoteDevice> getRemoteDevices(Context context) {
-        final ArrayList<RemoteDevice> tcpDevices =
+    public static ArrayList<RemoteDevice> getRemoteDevices(Context context, boolean skipBluetooth) {
+        final ArrayList<RemoteDevice> result =
                 TCPConnection.getRemoteDevices(context);
 
-        final ArrayList<RemoteDevice> bluetoothDevices =
-                BluetoothConnection.getRemoteDevices(context);
-
-        final ArrayList<RemoteDevice> result = new ArrayList<>();
-        result.addAll(tcpDevices);
-        result.addAll(bluetoothDevices);
+        if (! skipBluetooth)
+            result.addAll(BluetoothConnection.getRemoteDevices(context));
 
         return result;
     }
 
     public static Connection createConnection(
             RemoteDevice remoteDevice,
-            Consumer<String> onReceived,
-            Runnable onError,
             Context context) {
         switch (remoteDevice.type) {
             case BT:
-                return new BluetoothConnection(remoteDevice, onReceived, onError, context);
+                return new BluetoothConnection(remoteDevice, context);
             case TCP:
-                return new TCPConnection(remoteDevice, onReceived, onError, context);
+                return new TCPConnection(remoteDevice, context);
             default:
                 Toast.makeText(
                         context,

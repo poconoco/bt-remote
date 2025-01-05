@@ -53,13 +53,9 @@ public class TCPConnection implements Connection {
 
     public TCPConnection(
             ConnectionFactory.RemoteDevice remoteDevice,
-            Consumer<String> onReceived,
-            Runnable onError,
             Context context) {
         mConnected = false;
         mConnecting = false;
-        mOnReceived = onReceived;
-        mOnError = onError;
         mContext = context;
         mMainHandler = new Handler(Looper.getMainLooper());
 
@@ -77,11 +73,12 @@ public class TCPConnection implements Connection {
     }
 
     @Override
-    public Disposable connect(Runnable onConnected) {
+    public Disposable connect(Runnable onConnected, Runnable onError) {
         if (mPort == 0 || mAddresss == null)
             return null;
 
         mConnecting = true;
+        mOnError = onError;
 
          mReceiveThread = new Thread(() -> {
             try {
@@ -107,7 +104,8 @@ public class TCPConnection implements Connection {
                     final String _message = message;
                     mMainHandler.post(() -> {
                         // Expect remote to encode all \n as \t, and convert back here
-                        mOnReceived.accept(_message.replace('\t', '\n'));
+                        if (mOnReceived != null)
+                            mOnReceived.accept(_message.replace('\t', '\n'));
                     });
                 }
             } catch (Exception e) {
@@ -118,7 +116,8 @@ public class TCPConnection implements Connection {
                     mSendHandlerThread = null;
                 }
 
-                mMainHandler.post(mOnError);
+                if (mOnError != null)
+                    mMainHandler.post(mOnError);
                 mMainHandler.post(() -> {
                     Toast.makeText(
                             mContext,
@@ -156,13 +155,15 @@ public class TCPConnection implements Connection {
                     mContext,
                     "Error closing socket",
                     Toast.LENGTH_LONG).show();
-            mOnError.run();
+            if (mOnError != null)
+                mOnError.run();
         } catch (InterruptedException e) {
             Toast.makeText(
                     mContext,
                     "Error joining receive thread",
                     Toast.LENGTH_LONG).show();
-            mOnError.run();
+            if (mOnError != null)
+                mOnError.run();
         } finally {
             mConnected = false;
         }
@@ -184,10 +185,16 @@ public class TCPConnection implements Connection {
                             mContext,
                             "Communication error",
                             Toast.LENGTH_LONG).show();
-                    mOnError.run();
+                    if (mOnError != null)
+                        mOnError.run();
                 });
             }
         });
+    }
+
+    @Override
+    public void setOnReceivedListener(Consumer<String> onReceived) {
+        mOnReceived = onReceived;
     }
 
     @Override
@@ -204,8 +211,8 @@ public class TCPConnection implements Connection {
     private int mPort;
     private boolean mConnected;
     private boolean mConnecting;
-    private final Runnable mOnError;
-    private final Consumer<String> mOnReceived;
+    private Runnable mOnError;
+    private Consumer<String> mOnReceived;
     private final Context mContext;
     private final Handler mMainHandler;
     private HandlerThread mSendHandlerThread;
