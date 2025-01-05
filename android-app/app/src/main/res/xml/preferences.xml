@@ -112,12 +112,13 @@
 
         <SwitchPreferenceCompat
             android:key="remoteStatsOnTopVideo"
-            android:title="Show remote stats on top of the video"
+            android:title="Remote stats on top"
             app:defaultValue="true" />
 
         <EditTextPreference
             android:key="videoStreamURL"
             android:title="Video stream URL"
+            android:defaultValue="@string/defaultVideoStreamURL"
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 

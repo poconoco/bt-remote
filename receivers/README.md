@@ -19,11 +19,27 @@ object on Pi Pico platform. Any serial-like object with the following methods:
  - println()
  - available()
  - read()
-   
+
+To instantiate a receiver, you'll need to pass a serial object into the BtRcReceiver 
+constructor, as well as the desired BT name and a PIN code. 
+
+Note 1: for the name to be updated and seen on device it may take power cycling your BT module
+
+Note 2: PIN code in some adapters is not changed and still remains to be factory default 
+        like 1234, 0000 or 1111.
+
+Note 3: Some adapters may require "=" prefix before BT name and PIN. Ones that I used for 
+        testing did not need that
+
+Note 4: To receive the data you need to periodically call tick() method
+
 Example usages:
  - https://github.com/poconoco/simple-rc-car - PlatformIO project, Arduino platform
  - https://github.com/poconoco/balancer - Android IDE project, Pi Pico platform, 
    code is a bit deprecated, see README.md there
+
+To establish a Bluetooth connection from the app, you first need to pair your BT module 
+with the phone in Android Settings. Inside the app only paired that way devices are visible.
 
 ### Esp32TcpRcClient.h
 

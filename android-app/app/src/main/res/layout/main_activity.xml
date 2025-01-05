@@ -23,7 +23,7 @@
 
             <Spinner
                 android:id="@+id/btDevice"
-                android:layout_width="300dp"
+                android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:foregroundTint="@color/white"
                 android:spinnerMode="dropdown"
@@ -34,10 +34,13 @@
 
             <Button
                 android:id="@+id/connect"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_margin="2dp"
+                android:background="@drawable/button_background"
                 android:text="Connect"
-                app:layout_constraintStart_toEndOf="@+id/btDevice"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="@+id/btDevice" />
 
             <TextView
@@ -57,12 +60,28 @@
                 android:id="@+id/buttonSettings"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/button_background"
                 android:backgroundTint="@color/primary_1"
-                android:backgroundTintMode="src_over"
+                android:padding="9dp"
                 android:src="@drawable/gear"
+                android:layout_marginEnd="5dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/buttonHelp"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageButton
+                android:id="@+id/buttonHelp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/button_background"
+                android:backgroundTint="@color/primary_1"
+                android:padding="9dp"
+                android:layout_margin="2dp"
+                android:src="@drawable/question"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -148,9 +167,10 @@
                         android:scaleType="fitCenter"
                         app:layout_constraintBottom_toTopOf="@+id/sliderLContainer"
                         app:layout_constraintDimensionRatio="1"
-                        app:layout_constraintHeight_max="350dp"
+                        app:layout_constraintHeight_max="250dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="1.0"
                         app:srcCompat="@drawable/pad" />
 
                     <ImageView
@@ -162,8 +182,9 @@
                         app:layout_constraintBottom_toTopOf="@+id/sliderRContainer"
                         app:layout_constraintDimensionRatio="1"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintHeight_max="350dp"
+                        app:layout_constraintHeight_max="250dp"
                         app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="1.0"
                         app:srcCompat="@drawable/pad" />
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -326,7 +347,8 @@
             <Button
                 android:id="@+id/buttonE"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
+                android:background="@drawable/button_background"
                 android:text="E"
                 android:textAllCaps="false"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -338,7 +360,8 @@
             <Button
                 android:id="@+id/buttonF"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
+                android:background="@drawable/button_background"
                 android:text="F"
                 android:textAllCaps="false"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -350,7 +373,8 @@
             <Button
                 android:id="@+id/buttonG"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
+                android:background="@drawable/button_background"
                 android:text="G"
                 android:textAllCaps="false"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -362,7 +386,8 @@
             <Button
                 android:id="@+id/buttonH"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="40dp"
+                android:background="@drawable/button_background"
                 android:text="H"
                 android:textAllCaps="false"
                 app:layout_constraintBottom_toBottomOf="parent"

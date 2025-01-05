@@ -12,7 +12,6 @@ import java.util.concurrent.Executors;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.media3.common.MediaItem;
@@ -27,10 +26,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.PointF;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -47,6 +44,7 @@ import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.niqdev.mjpeg.DisplayMode;
 import com.github.niqdev.mjpeg.Mjpeg;
@@ -61,7 +59,7 @@ import com.nocomake.serialremote.protocol.ProtocolFactory;
 
 import DiyRemote.R;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends FullscreenActivityBase {
 
     private static final int BT_PERMISSION_REQUEST = 100;
     private static final String SELECTED_DEVICE_KEY = "SELECTED_DEVICE_KEY";
@@ -73,9 +71,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getSupportActionBar().hide();
         setContentView(R.layout.main_activity);
-        fixFullscreen();
 
         mBackgroundExecutor = Executors.newSingleThreadExecutor();
         mStatus = findViewById(R.id.status);
@@ -107,24 +103,7 @@ public class MainActivity extends AppCompatActivity {
         attachControlButtons();
         attachSliders();
 
-        initSettingsButton();
-        applyConfigurablePreferences();
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                         != PackageManager.PERMISSION_GRANTED ||
-                 ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
-                         != PackageManager.PERMISSION_GRANTED)) {
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{
-                            Manifest.permission.BLUETOOTH_CONNECT,
-                            Manifest.permission.BLUETOOTH_SCAN},
-                    BT_PERMISSION_REQUEST);
-        } else {
-            populateRemoteDevices();
-        }
+        initAuxButtons();
     }
 
     @Override
@@ -141,10 +120,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (mSerialConnection == null ||
                 (! mSerialConnection.isConnected() && ! mSerialConnection.isConnecting())) {
-            populateRemoteDevices();
+            checkPermissionsAndPopulateRemoteDevices();
         }
-
-        loadState();
     }
 
     @Override
@@ -154,29 +131,53 @@ public class MainActivity extends AppCompatActivity {
             int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == BT_PERMISSION_REQUEST) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
-                populateRemoteDevices();
-            } else {
-                mStatus.setText("Check BT permission");
+            mNoPermission = false;
+            for (int grantResult : grantResults) {
+                if (grantResult != PackageManager.PERMISSION_GRANTED)
+                    mNoPermission = true;
             }
+
+            if (mNoPermission)
+                showNoBtPermissionToast();
+
+            populateRemoteDevices();
         }
     }
 
-    private void fixFullscreen() {
-        // Try to fill the space under the camera cutout to the same color we use for
-        // background
-        final Bitmap bitmap = Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888);
-        bitmap.eraseColor(getResources().getColor(R.color.background, null));
-        final BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(), bitmap);
-        getWindow().setBackgroundDrawable(bitmapDrawable);
+    private void showNoBtPermissionToast() {
+        Toast.makeText(
+                this,
+                "Bluetooth permission denied, BT connections disabled",
+                Toast.LENGTH_LONG).show();
+    }
 
-        // An attempt to remove the black bar at the bottom with close swipe handle,
-        // but also affects status bar, so disable for now, to reconsider later
+    private void checkPermissionsAndPopulateRemoteDevices() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
+                        != PackageManager.PERMISSION_GRANTED ||
+                        ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN)
+                                != PackageManager.PERMISSION_GRANTED)) {
 
-        // getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-        //                      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            boolean showRationale =
+                    ActivityCompat.shouldShowRequestPermissionRationale(
+                            this, Manifest.permission.BLUETOOTH_CONNECT);
+
+            if (!showRationale) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{
+                                Manifest.permission.BLUETOOTH_CONNECT,
+                                Manifest.permission.BLUETOOTH_SCAN},
+                        BT_PERMISSION_REQUEST);
+            } else {
+                mNoPermission = true;
+                showNoBtPermissionToast();
+                populateRemoteDevices();
+            }
+        } else {
+            mNoPermission = false;
+            populateRemoteDevices();
+        }
     }
 
     private void saveState() {
@@ -257,7 +258,8 @@ public class MainActivity extends AppCompatActivity {
         setViewVisibility(R.id.leftKnob, sharedPreferences.getBoolean("showJoyL", true));
         setViewVisibility(R.id.rightKnob, sharedPreferences.getBoolean("showJoyR", true));
 
-        mVideoStreamURL = sharedPreferences.getString("videoStreamURL", null);
+        final String defaultStreamURL = getResources().getString(R.string.defaultVideoStreamURL);
+        mVideoStreamURL = sharedPreferences.getString("videoStreamURL", defaultStreamURL);
         mVideoStreamMJPG = sharedPreferences.getBoolean("videoStreamIsMJPEG", true);
         mVideoStreamEnabled = sharedPreferences.getBoolean("videoStreamEnabled", false)
                 && mVideoStreamURL != null && !mVideoStreamURL.isEmpty();
@@ -291,12 +293,19 @@ public class MainActivity extends AppCompatActivity {
         view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-    private void initSettingsButton() {
+    private void initAuxButtons() {
         final ImageButton settingsButton = findViewById(R.id.buttonSettings);
         settingsButton.setOnClickListener(v -> {
             Intent settingsIntent = new Intent(MainActivity.this, PrefsActivity.class);
             MainActivity.this.startActivity(settingsIntent);
         });
+
+        final ImageButton helpButton = findViewById(R.id.buttonHelp);
+        helpButton.setOnClickListener(v -> {
+            Intent helpIntent = new Intent(MainActivity.this, HelpActivity.class);
+            MainActivity.this.startActivity(helpIntent);
+        });
+
     }
 
     private void setRemoteStatus(String status) {
@@ -304,7 +313,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void populateRemoteDevices() {
-        mRemoteDevices = ConnectionFactory.getRemoteDevices(this);
+        mRemoteDevices = ConnectionFactory.getRemoteDevices(this, mNoPermission);
         final List<String> names = Arrays.asList(mRemoteDevices
                 .stream()
                 .map(remoteDevice -> remoteDevice.name)
@@ -318,6 +327,8 @@ public class MainActivity extends AppCompatActivity {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mDeviceSelection.setAdapter(spinnerAdapter);
 
+        // We can load state only after populating the remote devices
+        loadState();
         resetConnectButton();
     }
 
@@ -585,8 +596,6 @@ public class MainActivity extends AppCompatActivity {
 
         mSerialConnection = ConnectionFactory.createConnection(
                 selectedDevice,
-                this::onMessageReceived,
-                this::onConnectionError,
                 this);
 
         if (mSerialConnection == null) {
@@ -594,7 +603,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        final Disposable d = mSerialConnection.connect(this::onConnected);
+        mSerialConnection.setOnReceivedListener(this::onMessageReceived);
+        final Disposable d = mSerialConnection.connect(this::onConnected, this::onConnectionError);
         if (d != null)
             mCompositeDisposable.add(d);
     }
@@ -757,6 +767,7 @@ public class MainActivity extends AppCompatActivity {
         return Math.max(min, Math.min(max, val));
     }
 
+    private boolean mNoPermission;
     private TextView mStatus;
     private TextView mRemoteStats;
     private Spinner mDeviceSelection;
