@@ -22,19 +22,19 @@ def clamp(x, min, max):
 
 def run():
 
-    # Init Servo controller attaced via I2C
+    # Init servo controller attaced via I2C
     i2c = board.I2C()
     pca = PCA9685(i2c)
     pca.frequency = 50
 
-    # Iniservos
+    # Init servos
     h_servo = servo.Servo(pca.channels[0])
     v_servo = servo.Servo(pca.channels[1])
 
     # Init RC receiver
     rc = TcpRcReceiver()
-    h_pos = 90;
-    v_pos = 90;
+    h_pos = 90
+    v_pos = 90
 
     # Guess the Raspberry Pi IPs
     ips = check_output(['hostname', '-I'], text=True).strip().split(' ')
