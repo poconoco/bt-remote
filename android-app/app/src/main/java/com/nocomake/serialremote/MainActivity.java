@@ -33,6 +33,7 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
@@ -81,6 +82,8 @@ public class MainActivity extends FullscreenActivityBase {
 
         mLeftJoyPos = new PointF(0.5f, 0.5f);
         mRightJoyPos = new PointF(0.5f, 0.5f);
+        mPrevLeftJoyPos = new PointF(0.5f, 0.5f);
+        mPrevRightJoyPos = new PointF(0.5f, 0.5f);
 
         mDeviceSelection.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -96,8 +99,16 @@ public class MainActivity extends FullscreenActivityBase {
             }
         });
 
-        attachJoystickWhenPadReady(findViewById(R.id.leftJoystick), findViewById(R.id.leftKnob), mLeftJoyPos);
-        attachJoystickWhenPadReady(findViewById(R.id.rightJoystick), findViewById(R.id.rightKnob), mRightJoyPos);
+        attachJoystickWhenPadReady(
+                findViewById(R.id.leftJoystick),
+                findViewById(R.id.leftKnob),
+                mLeftJoyPos,
+                mPrevLeftJoyPos);
+        attachJoystickWhenPadReady(
+                findViewById(R.id.rightJoystick),
+                findViewById(R.id.rightKnob),
+                mRightJoyPos,
+                mPrevRightJoyPos);
 
         attachControlSwitches();
         attachControlButtons();
@@ -367,13 +378,17 @@ public class MainActivity extends FullscreenActivityBase {
                 mSendPeriod); // Approximately, we do not compensate for the execution time, etc
     }
 
-    private void attachJoystickWhenPadReady(ImageView padView, RelativeLayout knobView, PointF pos) {
+    private void attachJoystickWhenPadReady(
+            ImageView padView,
+            RelativeLayout knobView,
+            PointF pos,
+            PointF prevPos) {
         // We need to position knob knowing the pad width and height, but they are not
         // available during onCreate nor onResume, so we have to listen to the layout
         // listener to reset initial positions of knobs
         padView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
             updateKnob(padView, knobView, pos);
-            attachJoysticks(padView, knobView, pos);
+            attachJoysticks(padView, knobView, pos, prevPos);
         });
     }
 
@@ -408,15 +423,19 @@ public class MainActivity extends FullscreenActivityBase {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void attachJoysticks(ImageView padView, RelativeLayout knobView, PointF output) {
+    private void attachJoysticks(
+            ImageView padView,
+            RelativeLayout knobView,
+            PointF output,
+            PointF prevOutput) {
         final MainActivity that = this;
         padView.setOnTouchListener((view1, motionEvent) -> {
             final int action = motionEvent.getActionMasked();
             final float width = view1.getWidth();
             final float height = view1.getHeight();
 
-            final float knobW = (float) knobView.getWidth();
-            final float knobH = (float) knobView.getHeight();
+            final float knobW = knobView.getWidth();
+            final float knobH = knobView.getHeight();
 
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
@@ -428,6 +447,8 @@ public class MainActivity extends FullscreenActivityBase {
                     final float yDist = height / 2 - motionEvent.getY();
                     if (Math.pow(xDist, 2) + Math.pow(yDist, 2) > Math.pow(knobW / 2, 2))
                         return true;
+
+                    view1.performHapticFeedback(HapticFeedbackConstants.GESTURE_START);
 
                     grabbedPads.add(padView);
                 case MotionEvent.ACTION_MOVE:
@@ -443,6 +464,24 @@ public class MainActivity extends FullscreenActivityBase {
                     output.x = clamp(x, 0, 1);
                     output.y = 1 - clamp(y, 0, 1);
 
+                    if ((prevOutput.x != 0 && output.x == 0) ||
+                        (prevOutput.x != 1 && output.x == 1) ||
+                        (prevOutput.y != 0 && output.y == 0) ||
+                        (prevOutput.y != 1 && output.y == 1)) {
+
+                        view1.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                    } else if ((prevOutput.x == 0 && output.x != 0) ||
+                               (prevOutput.x == 1 && output.x != 1) ||
+                               (prevOutput.y == 0 && output.y != 0) ||
+                               (prevOutput.y == 1 && output.y != 1)) {
+
+                        view1.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE);
+                    }
+
+
+                    prevOutput.x = output.x;
+                    prevOutput.y = output.y;
+
                     that.updateKnob(padView, knobView, output);
                     return true;
 
@@ -452,6 +491,7 @@ public class MainActivity extends FullscreenActivityBase {
                     output.y = 0.5f;
 
                     that.updateKnob(padView, knobView, output);
+                    view1.performHapticFeedback(HapticFeedbackConstants.GESTURE_END);
                     return true;
             }
 
@@ -778,6 +818,9 @@ public class MainActivity extends FullscreenActivityBase {
     // State to be sent
     private PointF mLeftJoyPos;
     private PointF mRightJoyPos;
+
+    private PointF mPrevLeftJoyPos;
+    private PointF mPrevRightJoyPos;
     private boolean[] mSwitchesState;
     private boolean[] mButtonsState;
     private byte[] mSliderPositions;
