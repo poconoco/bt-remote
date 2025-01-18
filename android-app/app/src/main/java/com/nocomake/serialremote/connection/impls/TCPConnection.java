@@ -9,7 +9,7 @@ import java.net.SocketAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.function.Consumer;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 
 import android.content.Context;
 import android.content.SharedPreferences;

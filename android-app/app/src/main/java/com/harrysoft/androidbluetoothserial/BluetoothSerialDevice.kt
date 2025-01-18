@@ -1,7 +1,7 @@
 package com.harrysoft.androidbluetoothserial
 
-import io.reactivex.Completable
-import io.reactivex.Flowable
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Flowable
 import java.io.InputStream
 import java.io.OutputStream
 
