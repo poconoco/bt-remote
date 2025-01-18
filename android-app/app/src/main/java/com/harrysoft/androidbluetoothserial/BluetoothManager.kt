@@ -2,7 +2,7 @@ package com.harrysoft.androidbluetoothserial
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import io.reactivex.Single
+import io.reactivex.rxjava3.core.Single
 import java.nio.charset.Charset
 
 interface BluetoothManager : AutoCloseable {

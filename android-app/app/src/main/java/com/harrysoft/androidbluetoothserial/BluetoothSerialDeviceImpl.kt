@@ -2,9 +2,9 @@ package com.harrysoft.androidbluetoothserial
 
 import android.bluetooth.BluetoothSocket
 import android.text.TextUtils
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Completable
-import io.reactivex.Flowable
+import io.reactivex.rxjava3.core.BackpressureStrategy
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Flowable
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
