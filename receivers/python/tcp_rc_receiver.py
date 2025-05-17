@@ -87,7 +87,7 @@ class TcpRcReceiver:
 
     def get_connected_time(self):
         if self.client_socket is None:
-            return None
+            return 0
         else:
             return time.time() - self.connection_start
 
