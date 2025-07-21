@@ -36,8 +36,7 @@ source .venv/bin/activate
    which simplifies 
 
 ```
-python -m pip install adafruit-circuitpython-pca9685
-python -m pip install adafruit-motor
+python -m pip -r requirements.txt
 ```
 
 6) Now you are ready to launch the example

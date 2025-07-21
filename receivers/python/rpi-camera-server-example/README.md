@@ -33,7 +33,7 @@ source .venv/bin/activate
    virtual environment, contained in the .venv folder
 
 ```
-python -m pip install picamera2
+python -m pip install -r requirements.txt
 ```
 
 6) Now you are ready to launch the example
