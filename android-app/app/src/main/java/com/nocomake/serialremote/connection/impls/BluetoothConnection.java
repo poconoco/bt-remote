@@ -22,7 +22,7 @@ import com.nocomake.serialremote.connection.ConnectionFactory;
 public class BluetoothConnection implements Connection {
     public static ArrayList<ConnectionFactory.RemoteDevice> getRemoteDevices(Context context) {
         final ArrayList<ConnectionFactory.RemoteDevice> result = new ArrayList<>();
-        BluetoothManager bluetoothManager = BluetoothManager.getInstance();
+        BluetoothManager bluetoothManager = BluetoothManager.getInstance(context);
         if (bluetoothManager == null) {
             Toast.makeText(
                     context,
@@ -56,7 +56,7 @@ public class BluetoothConnection implements Connection {
         mConnected = false;
         mConnecting = false;
         mRemoteDevice = remoteDevice;
-        mBluetoothManager = BluetoothManager.getInstance();
+        mBluetoothManager = BluetoothManager.getInstance(context);
         if (mBluetoothManager == null) {
             Toast.makeText(context, "Bluetooth not available", Toast.LENGTH_LONG).show();
         }

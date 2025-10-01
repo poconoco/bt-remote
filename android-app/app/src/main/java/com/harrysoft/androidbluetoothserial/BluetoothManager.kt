@@ -2,8 +2,10 @@ package com.harrysoft.androidbluetoothserial
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.content.Context
 import io.reactivex.rxjava3.core.Single
 import java.nio.charset.Charset
+import android.bluetooth.BluetoothManager as SystemBluetoothManager // Alias the Android system class
 
 interface BluetoothManager : AutoCloseable {
     /**
@@ -71,13 +73,25 @@ interface BluetoothManager : AutoCloseable {
 
     companion object {
         /**
-         * @return A BluetoothManager instance if the device
-         * has Bluetooth or null otherwise.
+         * Creates and returns a BluetoothManager instance if the device
+         * has Bluetooth, or null otherwise.
+         *
+         * @param context The application context is required to access system services.
+         * @return A BluetoothManager instance or null.
          */
         @JvmStatic
-        val instance: BluetoothManager? by lazy {
-            val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-            if (bluetoothAdapter != null) {
+        fun getInstance(context: Context): BluetoothManager? {
+            // 1. Get the BluetoothManager system service
+            val systemBluetoothManager =
+                context.getSystemService(Context.BLUETOOTH_SERVICE)
+                        as? SystemBluetoothManager
+
+            // 2. Use the BluetoothManager to get the BluetoothAdapter
+            val bluetoothAdapter = systemBluetoothManager?.adapter
+
+            // 3. Initialize your class if the adapter is available
+            return if (bluetoothAdapter != null) {
+                // Assuming BluetoothManagerImpl is your concrete implementation
                 BluetoothManagerImpl(bluetoothAdapter)
             } else null
         }
