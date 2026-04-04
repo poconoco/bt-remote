@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.media3.common.MediaItem;
@@ -75,6 +76,7 @@ public class MainActivity extends FullscreenActivityBase {
         setContentView(R.layout.main_activity);
 
         mBackgroundExecutor = Executors.newSingleThreadExecutor();
+        mRotationSource = new RotationSource(this);
         mStatus = findViewById(R.id.status);
         mRemoteStats = findViewById(R.id.remoteStats);
         mDeviceSelection = findViewById(R.id.btDevice);
@@ -138,8 +140,8 @@ public class MainActivity extends FullscreenActivityBase {
     @Override
     public void onRequestPermissionsResult(
             int requestCode,
-            String[] permissions,
-            int[] grantResults) {
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == BT_PERMISSION_REQUEST) {
             mNoPermission = false;
@@ -366,16 +368,32 @@ public class MainActivity extends FullscreenActivityBase {
                     for (int i = 0; i < mSliderPositions.length; i++)
                         packet.sliders[i] = (byte)(mSliderPositions[i] - 128);
 
-                    // Normalize joystick positions as well
-                    packet.axes[0] = (byte)Math.round(mLeftJoyPos.x * 255 - 128);
-                    packet.axes[1] = (byte)Math.round(mLeftJoyPos.y * 255 - 128);
-                    packet.axes[2] = (byte)Math.round(mRightJoyPos.x * 255 - 128);
-                    packet.axes[3] = (byte)Math.round(mRightJoyPos.y * 255 - 128);
+                    // Joystick positions
+                    packet.axes[0] = normalizedToByte(mLeftJoyPos.x);
+                    packet.axes[1] = normalizedToByte(mLeftJoyPos.y);
+                    packet.axes[2] = normalizedToByte(mRightJoyPos.x);
+                    packet.axes[3] = normalizedToByte(mRightJoyPos.y);
+
+                    // And finally, the orientation
+                    packet.orientation[0] = radToByte(mRotationSource.pitch());
+                    packet.orientation[1] = radToByte(mRotationSource.roll());
+                    packet.orientation[2] = radToByte(mRotationSource.yaw());
 
                     mSerialConnection.send(mProtocol.serialize(packet));
                     scheduleSend();
                 },
                 mSendPeriod); // Approximately, we do not compensate for the execution time, etc
+    }
+
+    private byte normalizedToByte(float value) {
+        // expect value to be [0, 1]
+        return (byte)Math.round(value * 255 - 128);
+    }
+
+    private byte radToByte(float rad) {
+        // Support up to 45 degrees tilts
+        final float normalized = clamp(rad / ((float)Math.PI / 2f) + 0.5f, 0, 1);
+        return normalizedToByte(normalized);
     }
 
     private void attachJoystickWhenPadReady(
@@ -448,7 +466,7 @@ public class MainActivity extends FullscreenActivityBase {
                     if (Math.pow(xDist, 2) + Math.pow(yDist, 2) > Math.pow(knobW / 2, 2))
                         return true;
 
-                    view1.performHapticFeedback(HapticFeedbackConstants.GESTURE_START);
+                    view1.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 
                     grabbedPads.add(padView);
                 case MotionEvent.ACTION_MOVE:
@@ -469,13 +487,13 @@ public class MainActivity extends FullscreenActivityBase {
                         (prevOutput.y != 0 && output.y == 0) ||
                         (prevOutput.y != 1 && output.y == 1)) {
 
-                        view1.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+                        view1.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     } else if ((prevOutput.x == 0 && output.x != 0) ||
                                (prevOutput.x == 1 && output.x != 1) ||
                                (prevOutput.y == 0 && output.y != 0) ||
                                (prevOutput.y == 1 && output.y != 1)) {
 
-                        view1.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE);
+                        view1.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     }
 
 
@@ -491,7 +509,7 @@ public class MainActivity extends FullscreenActivityBase {
                     output.y = 0.5f;
 
                     that.updateKnob(padView, knobView, output);
-                    view1.performHapticFeedback(HapticFeedbackConstants.GESTURE_END);
+                    view1.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     return true;
             }
 
@@ -668,12 +686,14 @@ public class MainActivity extends FullscreenActivityBase {
 
         setRemoteStatus("");
         disconnectVideoStream(this::resetConnectButton);
+        mRotationSource.stop();
     }
 
     private void onConnected() {
         mStatus.setText("Connected");
         setRemoteStatus("");
         resetConnectButton();
+        mRotationSource.start();
         scheduleSend();
     }
 
@@ -830,6 +850,7 @@ public class MainActivity extends FullscreenActivityBase {
 
     private Connection mSerialConnection;
     private Protocol mProtocol;
+    private RotationSource mRotationSource;
 
     private boolean mVideoStreamEnabled;
     private boolean mVideoStreamMJPG;

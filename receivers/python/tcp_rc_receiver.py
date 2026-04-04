@@ -12,7 +12,8 @@ class TcpRcReceiver:
         self.switches = [False, False, False, False, False, False, False, False]
         self.axes = [0, 0, 0, 0]
         self.sliders = [0, 0]
-        self.reserved = [0, 0, 0, 0]
+        self.orientation = [0, 0, 0]
+        self.reserved = 0
         self.print_debug = print_debug
         self.connection_start = 0
 
@@ -79,11 +80,17 @@ class TcpRcReceiver:
     def get_slider_right(self):
         return self.sliders[1]
 
-    def get_reserved(self, i):
-        if i not in range(0, len(self.reserved)):
-            return None
-        else:
-            return self.reserved[i]
+    def get_pitch(self):
+        return self.orientation[0]
+
+    def get_roll(self):
+        return self.orientation[1]
+
+    def get_yaw(self):
+        return self.orientation[2]
+
+    def get_reserved(self):
+        return self.reserved
 
     def get_connected_time(self):
         if self.client_socket is None:
@@ -156,8 +163,10 @@ class TcpRcReceiver:
         for i in range(0, 2):
             self.sliders[i] = signed_data[5 + i]
 
-        for i in range(0, 4):
-            self.reserved[i] = signed_data[7 + i]
+        for i in range(0, 3):
+            self.orientation[i] = signed_data[7 + i]
+
+        self.reserved = signed_data[10]
 
         return True
 
@@ -197,7 +206,12 @@ def rc_state_to_str(receiver):
     sl = axis_or_slider_to_str(receiver.get_slider_left())
     sr = axis_or_slider_to_str(receiver.get_slider_right())
 
-    return f'SW: {switches}, Joy1: {x1}{y1}, Joy2: {x2}{y2}, Sliders: {sl}{sr}'
+    pitch = axis_or_slider_to_str(receiver.get_pitch())
+    roll = axis_or_slider_to_str(receiver.get_roll())
+    yaw = axis_or_slider_to_str(receiver.get_yaw())
+
+    return f'J1: {x1}{y1} J2: {x2}{y2} SW: {switches} Sldr: {sl}{sr}\n' \
+           f'O: {pitch}{roll}{yaw}'
 
 
 if __name__ == '__main__':
@@ -206,7 +220,7 @@ if __name__ == '__main__':
     print("\nPress Ctrl+C key to exit...") 
     while True:
         if rc.is_connected():
-            print('\r'+rc_state_to_str(rc), end='', flush=True)
+            print(f'\033[1F\033[J{rc_state_to_str(rc)}', end='', flush=True)
             rc.send(f'Live for: {round(rc.get_connected_time())}s\n[next line]')
 
         time.sleep(0.1)

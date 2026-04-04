@@ -31,9 +31,11 @@ public class BinaryProtocol implements Protocol {
         for (byte value : packet.sliders)
             result[p++] = value;
 
-        // 4 bytes - reserved
-        for (byte value : packet.reserved)
+        // 3 bytes - orientation (pitch/roll/yaw)
+        for (byte value : packet.orientation)
             result[p++] = value;
+
+        result[p++] = packet.reserved;
 
         // Calculate XOR checksum
         byte checksum = 0;
