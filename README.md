@@ -29,7 +29,8 @@ Remote sends control data in packets of 15 bytes:
 - 2 bytes - X and Y axes of the left joystick. Each is a signed 8-bit integer, 0 when joystick is in the middle
 - 2 bytes - X and Y axes of the right joystick
 - 2 bytes - left and Right slider values, also signed 8-bit integers
-- 4 bytes - reserved for the future usage
+- 3 bytes - orientation (tilt) of the device (pitch, roll, yaw)
+- 1 byte - reserved for the future usage
 - 1 byte - XOR checksum of the previous 14 bytes
 
 ![Packet diagram](packet.png)
