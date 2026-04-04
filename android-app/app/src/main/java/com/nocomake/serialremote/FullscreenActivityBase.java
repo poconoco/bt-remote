@@ -3,6 +3,7 @@ package com.nocomake.serialremote;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -27,9 +28,14 @@ public class FullscreenActivityBase extends AppCompatActivity {
 
         // An attempt to remove the black bar at the bottom with close swipe handle,
         // but also affects status bar, so disable for now, to reconsider later
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
 
-        // getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-        //                      WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
+//        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+//                             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
     }
 
 }

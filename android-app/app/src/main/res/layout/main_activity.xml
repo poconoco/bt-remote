@@ -13,7 +13,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingHorizontal="30px"
+        android:paddingVertical="20px">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/topTools"
@@ -60,11 +62,11 @@
                 android:id="@+id/buttonSettings"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
                 android:background="@drawable/button_background"
                 android:backgroundTint="@color/primary_1"
                 android:padding="9dp"
                 android:src="@drawable/gear"
-                android:layout_marginEnd="5dp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/buttonHelp"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -73,10 +75,10 @@
                 android:id="@+id/buttonHelp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_margin="2dp"
                 android:background="@drawable/button_background"
                 android:backgroundTint="@color/primary_1"
                 android:padding="9dp"
-                android:layout_margin="2dp"
                 android:src="@drawable/question"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -121,9 +123,9 @@
 
                         <SeekBar
                             android:id="@+id/sliderL"
-                            android:max="255"
                             android:layout_width="0dp"
                             android:layout_height="42dp"
+                            android:max="255"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toEndOf="@+id/sliderLText" />
@@ -151,9 +153,9 @@
 
                         <SeekBar
                             android:id="@+id/sliderR"
-                            android:max="255"
                             android:layout_width="0dp"
                             android:layout_height="42dp"
+                            android:max="255"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toEndOf="@+id/sliderRText" />
@@ -241,6 +243,7 @@
 
                         <TextView
                             android:id="@+id/remoteStats"
+                            style="@style/OutlineText"
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:layout_marginStart="20dp"
@@ -248,7 +251,6 @@
                             android:layout_marginEnd="20dp"
                             android:layout_marginBottom="20dp"
                             android:fontFamily="monospace"
-                            style="@style/OutlineText"
                             android:textSize="32sp"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"

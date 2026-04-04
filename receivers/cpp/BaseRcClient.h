@@ -15,7 +15,8 @@ class BaseRcClient {
             _switchesBitmask = 0;
             memset(_axes, 0, sizeof(_axes));
             memset(_sliders, -128, sizeof(_sliders));  // Reset slider to minimum by default
-            memset(_reserved, 0, sizeof(_reserved));            
+            memset(_orientation, 0, sizeof(_orientation));
+            _reserved = 0;
         }
 
         ~BaseRcClient() {
@@ -66,12 +67,10 @@ class BaseRcClient {
         int8_t getSliderL() { return _sliders[0]; }
         int8_t getSliderR() { return _sliders[1]; }
 
-        int8_t getReserved(uint8_t i) {
-            if (i >= sizeof(_reserved))
-                return 0;
-
-            return _reserved[i];
-        }
+        int8_t getPitch() { return _orientation[0]; }
+        int8_t getRoll() { return _orientation[1]; }
+        int8_t getYaw() { return _orientation[2]; }
+        int8_t getReserved() { return _reserved; }
 
         unsigned long getChecksumErrorCount() {
             return _checksumErrorCount;
@@ -111,7 +110,8 @@ class BaseRcClient {
                 _switchesBitmask = _buffer[(_bp+3) % _packetSize];
                 memcpy(_axes, _buffer+((_bp+4) % _packetSize), 4);
                 memcpy(_sliders, _buffer+((_bp+8) % _packetSize), 2);
-                memcpy(_reserved, _buffer+((_bp+10) % _packetSize), 4);
+                memcpy(_orientation, _buffer+((_bp+10) % _packetSize), 3);
+                _reserved = _buffer[(_bp+13) % _packetSize];
 
                 return true;
             }
@@ -123,7 +123,8 @@ class BaseRcClient {
         int8_t _switchesBitmask;
         int8_t _axes[4];
         int8_t _sliders[2];
-        int8_t _reserved[4];
+        int8_t _orientation[3];
+        int8_t _reserved;
 
         int8_t *_buffer;
         uint8_t _bp = 0;  // Buffer pointer 
