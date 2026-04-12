@@ -171,10 +171,6 @@ class TcpRcReceiver:
         return True
 
 
-def normalize_rc_input(rc_input):
-    return (rc_input + 128) / 255
-
-
 def switch_to_str(bool_switch):
     return '+' if bool_switch else '-' 
 
