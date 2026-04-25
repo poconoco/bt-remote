@@ -1,12 +1,11 @@
 package com.nocomake.serialremote.connection.impls;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.InputStreamReader;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.InetSocketAddress;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -24,7 +23,7 @@ import com.nocomake.serialremote.connection.ConnectionFactory;
 
 import DiyRemote.R;
 
-public class TCPConnection implements Connection {
+public class UDPConnection implements Connection {
 
     public static ArrayList<ConnectionFactory.RemoteDevice> getRemoteDevices(Context context) {
         final ArrayList<ConnectionFactory.RemoteDevice> result = new ArrayList<>();
@@ -36,22 +35,23 @@ public class TCPConnection implements Connection {
                 context.getResources().getInteger(R.integer.defaultIpPort);
         final String defaultIpAddress =
                 context.getResources().getString(R.string.defaultIpAddress);
+
         final String ipAddress =
                 sharedPreferences.getString("ipAddress", defaultIpAddress);
         final int ipPort = Integer.parseInt(sharedPreferences.getString(
                 "ipPort", Integer.toString(defaultPort)));
 
-        final String addressWithPort = ipAddress+":"+ipPort;
+        final String addressWithPort = ipAddress + ":" + ipPort;
 
         result.add(new ConnectionFactory.RemoteDevice(
-                ConnectionFactory.RemoteDevice.Type.TCP,
-                "TCP: "+addressWithPort,
+                ConnectionFactory.RemoteDevice.Type.UDP,
+                "UDP: " + addressWithPort,
                 addressWithPort));
 
         return result;
     }
 
-    public TCPConnection(
+    public UDPConnection(
             ConnectionFactory.RemoteDevice remoteDevice,
             Context context) {
         mConnected = false;
@@ -63,7 +63,7 @@ public class TCPConnection implements Connection {
         if (parts.length != 2) {
             Toast.makeText(
                     context,
-                    "Invalid TCP address, check preferences",
+                    "Invalid UDP address, check preferences",
                     Toast.LENGTH_LONG).show();
             return;
         }
@@ -80,110 +80,122 @@ public class TCPConnection implements Connection {
         mConnecting = true;
         mOnError = onError;
 
-         mReceiveThread = new Thread(() -> {
+        mReceiveThread = new Thread(() -> {
             try {
-                // Create a socket and connect to the server
-                SocketAddress socketAddress = new InetSocketAddress(mAddresss, mPort);
-                mSocket = new Socket();
-                mSocket.connect(socketAddress, 2000);
+                InetAddress serverAddr = InetAddress.getByName(mAddresss);
+                mSocket = new DatagramSocket();
+
+                // Connecting a UDP socket restricts it to this specific address/port.
+                // It does NOT establish a real connection, so this will succeed instantly.
+                mSocket.connect(serverAddr, mPort);
 
                 mConnected = true;
                 mConnecting = false;
                 mMainHandler.post(onConnected);
-                mOutputStream = mSocket.getOutputStream();
-                final BufferedReader reader =
-                    new BufferedReader(
-                        new InputStreamReader(mSocket.getInputStream()));
 
-                mSendHandlerThread = new HandlerThread("SendThread");
+                mSendHandlerThread = new HandlerThread("UdpSendThread");
                 mSendHandlerThread.start();
                 mSendHandler = new Handler(mSendHandlerThread.getLooper());
 
-                String message;
-                while ((message = reader.readLine()) != null) {
+                // Buffer for incoming packets (max standard UDP payload size)
+                byte[] receiveBuffer = new byte[65535];
+                DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+
+                while (mConnected) {
+                    // This blocks until a packet is received
+                    mSocket.receive(receivePacket);
+
+                    String message = new String(
+                            receivePacket.getData(),
+                            0,
+                            receivePacket.getLength(),
+                            StandardCharsets.UTF_8
+                    );
+
+                    // Replicate BufferedReader.readLine() behavior by stripping trailing newlines
+                    if (message.endsWith("\n")) {
+                        message = message.substring(0, message.length() - 1);
+                    }
+                    if (message.endsWith("\r")) {
+                        message = message.substring(0, message.length() - 1);
+                    }
+
                     final String _message = message;
                     mMainHandler.post(() -> {
-                        // Expect remote to encode all \n as \t, and convert back here
                         if (mOnReceived != null)
                             mOnReceived.accept(_message.replace('\t', '\n'));
                     });
                 }
+            } catch (SocketException e) {
+                // This is expected when disconnect() calls mSocket.close()
+                // We simply break out of the thread naturally.
             } catch (Exception e) {
                 mConnected = false;
                 mConnecting = false;
-                if (mSendHandlerThread != null) {
-                    mSendHandlerThread.quitSafely();
-                    mSendHandlerThread = null;
-                }
+                cleanupThreads();
 
                 if (mOnError != null)
                     mMainHandler.post(mOnError);
+
                 mMainHandler.post(() -> {
                     Toast.makeText(
                             mContext,
-                            "TCP communication error",
+                            "UDP communication error",
                             Toast.LENGTH_LONG).show();
                 });
             }
         });
 
         mReceiveThread.start();
-
         return null;
     }
 
     @Override
     public void disconnect() {
-        if (! mConnected)
+        if (!mConnected)
             return;
 
+        mConnected = false;
+
+        if (mSocket != null) {
+            mSocket.close(); // This interrupts the blocking mSocket.receive() loop
+            mSocket = null;
+        }
+
         try {
-            mSocket.shutdownInput();
-            mReceiveThread.join();
-
-            if (mSocket != null) {
-                mSocket.close();
-                mSocket = null;
+            if (mReceiveThread != null) {
+                mReceiveThread.join(1000); // Wait up to 1s for thread to die
             }
-
-            if (mSendHandlerThread != null) {
-                mSendHandlerThread.quitSafely();
-                mSendHandlerThread = null;
-            }
-        } catch (IOException e) {
-            Toast.makeText(
-                    mContext,
-                    "Error closing socket",
-                    Toast.LENGTH_LONG).show();
-            if (mOnError != null)
-                mOnError.run();
         } catch (InterruptedException e) {
-            Toast.makeText(
-                    mContext,
-                    "Error joining receive thread",
-                    Toast.LENGTH_LONG).show();
-            if (mOnError != null)
-                mOnError.run();
-        } finally {
-            mConnected = false;
+            Toast.makeText(mContext, "Error joining receive thread", Toast.LENGTH_SHORT).show();
+        }
+
+        cleanupThreads();
+    }
+
+    private void cleanupThreads() {
+        if (mSendHandlerThread != null) {
+            mSendHandlerThread.quitSafely();
+            mSendHandlerThread = null;
+            mSendHandler = null;
         }
     }
 
     @Override
     public void send(byte[] packet) {
-        if (! mConnected)
+        if (!mConnected || mSocket == null)
             return;
 
         mSendHandler.post(() -> {
             try {
-                mOutputStream.write(packet);
-                mOutputStream.flush();
+                // Since we used mSocket.connect(), we don't need to specify the address here
+                DatagramPacket sendPacket = new DatagramPacket(packet, packet.length);
+                mSocket.send(sendPacket);
             } catch (IOException e) {
                 mMainHandler.post(() -> {
-                    mConnected = false;
                     Toast.makeText(
                             mContext,
-                            "Communication error",
+                            "Error sending UDP packet",
                             Toast.LENGTH_LONG).show();
                     if (mOnError != null)
                         mOnError.run();
@@ -209,7 +221,7 @@ public class TCPConnection implements Connection {
 
     private String mAddresss;
     private int mPort;
-    private boolean mConnected;
+    private volatile boolean mConnected; // Volatile because it's checked across threads
     private boolean mConnecting;
     private Runnable mOnError;
     private Consumer<String> mOnReceived;
@@ -218,6 +230,5 @@ public class TCPConnection implements Connection {
     private HandlerThread mSendHandlerThread;
     private Handler mSendHandler;
     private Thread mReceiveThread;
-    private Socket mSocket;
-    private OutputStream mOutputStream;
+    private DatagramSocket mSocket;
 }

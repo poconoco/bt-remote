@@ -2,16 +2,16 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory android:title="TCP RC connection">
+    <PreferenceCategory android:title="TCP/UDP RC connection">
         <EditTextPreference
             android:key="ipAddress"
             android:title="IP address"
-            android:defaultValue="@string/defaultTcpAddress"
+            android:defaultValue="@string/defaultIpAddress"
             app:useSimpleSummaryProvider="true" />
         <EditTextPreference
             android:key="ipPort"
             android:title="IP port"
-            android:defaultValue="@integer/defaultTcpPort"
+            android:defaultValue="@integer/defaultIpPort"
             android:maxLength="5"
             android:inputType="numberDecimal"
             android:digits="0123456789"

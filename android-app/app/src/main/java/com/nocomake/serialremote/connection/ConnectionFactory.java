@@ -1,19 +1,18 @@
 package com.nocomake.serialremote.connection;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
-
 import android.content.Context;
-import android.widget.Toast;
 
 import com.nocomake.serialremote.connection.impls.BluetoothConnection;
 import com.nocomake.serialremote.connection.impls.TCPConnection;
+import com.nocomake.serialremote.connection.impls.UDPConnection;
 
 public class ConnectionFactory {
     public static class RemoteDevice {
         public enum Type {
             BT,
-            TCP
+            TCP,
+            UDP
         }
 
         public RemoteDevice(Type type_, String name_, String address_) {
@@ -28,8 +27,10 @@ public class ConnectionFactory {
     }
 
     public static ArrayList<RemoteDevice> getRemoteDevices(Context context, boolean skipBluetooth) {
-        final ArrayList<RemoteDevice> result =
-                TCPConnection.getRemoteDevices(context);
+        final ArrayList<RemoteDevice> result = new ArrayList<>();
+
+        result.addAll(TCPConnection.getRemoteDevices(context));
+        result.addAll(UDPConnection.getRemoteDevices(context));
 
         if (! skipBluetooth)
             result.addAll(BluetoothConnection.getRemoteDevices(context));
@@ -40,17 +41,10 @@ public class ConnectionFactory {
     public static Connection createConnection(
             RemoteDevice remoteDevice,
             Context context) {
-        switch (remoteDevice.type) {
-            case BT:
-                return new BluetoothConnection(remoteDevice, context);
-            case TCP:
-                return new TCPConnection(remoteDevice, context);
-            default:
-                Toast.makeText(
-                        context,
-                        "Unknown remote type: "+remoteDevice.type,
-                        Toast.LENGTH_LONG).show();
-                return null;
-        }
+        return switch (remoteDevice.type) {
+            case BT -> new BluetoothConnection(remoteDevice, context);
+            case TCP -> new TCPConnection(remoteDevice, context);
+            case UDP -> new UDPConnection(remoteDevice, context);
+        };
     }
 }
