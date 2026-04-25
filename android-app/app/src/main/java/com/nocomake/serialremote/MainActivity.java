@@ -350,38 +350,45 @@ public class MainActivity extends FullscreenActivityBase {
                     if (mSerialConnection == null || ! mSerialConnection.isConnected())
                         return;
 
-                    final Packet packet = new Packet();
-
-                    // Ensure packet accepts the same number of variables we have
-                    assert packet.axes.length == 4;
-                    assert packet.switches.length == mSwitchesState.length + mButtonsState.length;
-                    assert packet.sliders.length == mSliderPositions.length;
-
-                    // Pack switches together with buttons, they are all booleans
-                    final boolean[] allSwitchesState = Booleans.concat(mSwitchesState, mButtonsState);
-                    System.arraycopy(
-                            allSwitchesState, 0, packet.switches, 0, packet.switches.length);
-
-                    // Normalize sliders positions which are 0..255 to signed byte
-                    // which is -128..127 with center in 0
-                    for (int i = 0; i < mSliderPositions.length; i++)
-                        packet.sliders[i] = (byte)(mSliderPositions[i] - 128);
-
-                    // Joystick positions
-                    packet.axes[0] = normalizedToByte(mLeftJoyPos.x);
-                    packet.axes[1] = normalizedToByte(mLeftJoyPos.y);
-                    packet.axes[2] = normalizedToByte(mRightJoyPos.x);
-                    packet.axes[3] = normalizedToByte(mRightJoyPos.y);
-
-                    // And finally, the orientation
-                    packet.orientation[0] = radToByte(mRotationSource.pitch());
-                    packet.orientation[1] = radToByte(mRotationSource.roll());
-                    packet.orientation[2] = radToByte(mRotationSource.yaw());
-
-                    mSerialConnection.send(mProtocol.serialize(packet));
+                    sendPacket();
                     scheduleSend();
                 },
                 mSendPeriod); // Approximately, we do not compensate for the execution time, etc
+    }
+
+    private void sendPacket() {
+        if (mSerialConnection == null || ! mSerialConnection.isConnected())
+            return;
+
+        final Packet packet = new Packet();
+
+        // Ensure packet accepts the same number of variables we have
+        assert packet.axes.length == 4;
+        assert packet.switches.length == mSwitchesState.length + mButtonsState.length;
+        assert packet.sliders.length == mSliderPositions.length;
+
+        // Pack switches together with buttons, they are all booleans
+        final boolean[] allSwitchesState = Booleans.concat(mSwitchesState, mButtonsState);
+        System.arraycopy(
+                allSwitchesState, 0, packet.switches, 0, packet.switches.length);
+
+        // Normalize sliders positions which are 0..255 to signed byte
+        // which is -128..127 with center in 0
+        for (int i = 0; i < mSliderPositions.length; i++)
+            packet.sliders[i] = (byte)(mSliderPositions[i] - 128);
+
+        // Joystick positions
+        packet.axes[0] = normalizedToByte(mLeftJoyPos.x);
+        packet.axes[1] = normalizedToByte(mLeftJoyPos.y);
+        packet.axes[2] = normalizedToByte(mRightJoyPos.x);
+        packet.axes[3] = normalizedToByte(mRightJoyPos.y);
+
+        // And finally, the orientation
+        packet.orientation[0] = radToByte(mRotationSource.pitch());
+        packet.orientation[1] = radToByte(mRotationSource.roll());
+        packet.orientation[2] = radToByte(mRotationSource.yaw());
+
+        mSerialConnection.send(mProtocol.serialize(packet));
     }
 
     private byte normalizedToByte(float value) {
@@ -562,6 +569,9 @@ public class MainActivity extends FullscreenActivityBase {
                 switch (action) {
                     case MotionEvent.ACTION_DOWN:
                         mButtonsState[i_] = true;
+                        // Force send a packet to ensure click is registered even if button
+                        // was down less than send period
+                        sendPacket();
                         break;
                     case MotionEvent.ACTION_UP:
                         mButtonsState[i_] = false;
