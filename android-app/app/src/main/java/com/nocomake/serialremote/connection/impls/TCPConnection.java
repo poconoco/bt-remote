@@ -33,9 +33,9 @@ public class TCPConnection implements Connection {
                 PreferenceManager.getDefaultSharedPreferences(context);
 
         final int defaultPort =
-                context.getResources().getInteger(R.integer.defaultTcpPort);
+                context.getResources().getInteger(R.integer.defaultIpPort);
         final String defaultIpAddress =
-                context.getResources().getString(R.string.defaultTcpAddress);
+                context.getResources().getString(R.string.defaultIpAddress);
         final String ipAddress =
                 sharedPreferences.getString("ipAddress", defaultIpAddress);
         final int ipPort = Integer.parseInt(sharedPreferences.getString(

@@ -2,5 +2,5 @@
 <resources>defaultStatsFontSize
     <integer name="defaultSendPeriod">100</integer>
     <integer name="defaultStatsFontSize">32</integer>
-    <integer name="defaultTcpPort">9876</integer>
+    <integer name="defaultIpPort">9876</integer>
 </resources>
