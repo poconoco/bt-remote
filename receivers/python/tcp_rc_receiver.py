@@ -179,7 +179,7 @@ def axis_or_slider_to_str(value):
     normalized_value = value + 128
 
     str_slider_length = 9
-    str_slider_scale_down = 255 / str_slider_length
+    str_slider_scale_down = 256 / str_slider_length
     str_slider_position = math.floor(normalized_value / str_slider_scale_down)
     str_slider = ['=' for _ in range(str_slider_length)]
     str_slider[str_slider_position] = '0'
