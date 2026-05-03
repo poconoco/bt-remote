@@ -236,7 +236,9 @@ public class MainActivity extends FullscreenActivityBase {
                 for (i = 0; i < mRemoteDevices.size(); i++) {
                     final ConnectionFactory.RemoteDevice device = mRemoteDevices.get(i);
                     if (device.type.name().equals(selectedDeviceType)
-                            && device.address.equals(selectedDeviceAddress)) {
+                            && (device.address.equals(selectedDeviceAddress)
+                                    || device.type == ConnectionFactory.RemoteDevice.Type.TCP
+                                    || device.type == ConnectionFactory.RemoteDevice.Type.UDP)) {
                         mDeviceSelection.setSelection(i);
                         break;
                     }
