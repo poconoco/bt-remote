@@ -2,9 +2,11 @@ package com.nocomake.serialremote;
 
 import android.os.Bundle;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import DiyRemote.R;
 
-public class PrefsActivity extends FullscreenActivityBase {
+public class PrefsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
